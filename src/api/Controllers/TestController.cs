@@ -86,7 +86,7 @@ public class TestController : ControllerBase
         // than GET.
         RangeItemHeaderValue? range = null;
         var isHead = HttpMethods.IsHead(Request.Method);
-        if (isHead)
+        if (!isHead)
         {
             var parsed = RangeHelper.ParseRange(HttpContext, requestHeaders, fi.Length);
             range = parsed.range;
@@ -125,47 +125,37 @@ public class TestController : ControllerBase
                     return;
                 }
 
-                try
+                if (isRangeRequest)
                 {
-                    if (isRangeRequest)
+                    if (range == null)
                     {
-                        if (range == null)
-                        {
-                            responseHeaders.ContentRange = new ContentRangeHeaderValue(fi.Length);
-                            Response.StatusCode = StatusCodes.Status416RangeNotSatisfiable;
-                            return;
-                        }
-
-                        var begin = range.From!.Value;
-                        var end = range.To!.Value;
-                        var contentLength = end - begin + 1;
-                        responseHeaders.ContentRange = new ContentRangeHeaderValue(begin, end, fi.Length);
-                        // SetCompressionMode();
-                        responseHeaders.ContentType = contentType;
-                        Response.StatusCode = StatusCodes.Status206PartialContent;
-                        ApplyResponseHeaders(responseHeaders, lastModified, etag);
-
-                        try
-                        {
-                            await Response.SendFileAsync(fi.FullName, begin, contentLength, HttpContext.RequestAborted);
-                            return;
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            // Don't throw this exception, it's most likely caused by the client disconnecting.
-                        }
+                        responseHeaders.ContentRange = new ContentRangeHeaderValue(fi.Length);
+                        Response.StatusCode = StatusCodes.Status416RangeNotSatisfiable;
+                        return;
                     }
 
-                    ApplyResponseHeaders(responseHeaders, lastModified, etag, fi.Length);
+                    var begin = range.From!.Value;
+                    var end = range.To!.Value;
+                    var contentLength = end - begin + 1;
+                    responseHeaders.ContentRange = new ContentRangeHeaderValue(begin, end, fi.Length);
+                    // SetCompressionMode();
                     responseHeaders.ContentType = contentType;
-                    await Response.SendFileAsync(fi.FullName, 0, fi.Length, HttpContext.RequestAborted);
+                    Response.StatusCode = StatusCodes.Status206PartialContent;
+                    ApplyResponseHeaders(responseHeaders, lastModified, etag);
+
+                    try
+                    {
+                        await Response.SendFileAsync(fi.FullName, begin, contentLength, HttpContext.RequestAborted);
+                    }
+                    catch (OperationCanceledException) {/* Don't throw this exception, it's most likely caused by the client disconnecting. */}
+
                     return;
                 }
-                catch (FileNotFoundException)
-                {
-                    Response.StatusCode = StatusCodes.Status404NotFound;
-                    return;
-                }
+
+                ApplyResponseHeaders(responseHeaders, lastModified, etag, fi.Length);
+                responseHeaders.ContentType = contentType;
+                await Response.SendFileAsync(fi.FullName, 0, fi.Length, HttpContext.RequestAborted);
+                return;
             case PreconditionState.NotModified:
                 ApplyResponseHeaders(responseHeaders, lastModified, etag);
                 responseHeaders.ContentType = contentType;
@@ -196,12 +186,8 @@ public class TestController : ControllerBase
     {
         PreconditionState max = PreconditionState.Unspecified;
         for (int i = 0; i < states.Length; i++)
-        {
             if (states[i] > max)
-            {
                 max = states[i];
-            }
-        }
         return max;
     }
     internal enum PreconditionState : byte
