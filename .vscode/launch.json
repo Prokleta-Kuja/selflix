@@ -19,8 +19,10 @@
                 "action": "openExternally",
                 "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
             },
+            "envFile": "${workspaceFolder}/src/api/.env",
             "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://+:5080"
             },
             "sourceFileMap": {
                 "/Views": "${workspaceFolder}/Views"
@@ -31,6 +33,6 @@
             "type": "node-terminal",
             "command": "npm run start --prefix src/native",
             "request": "launch"
-          }
+        }
     ]
 }
