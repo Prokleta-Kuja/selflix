@@ -34,4 +34,5 @@ public class User
 
     public virtual List<Library> Libraries { get; set; } = new();
     public virtual List<UserDevice> Devices { get; set; } = new();
+    public virtual List<Watcher> Watchers { get; set; } = new();
 }

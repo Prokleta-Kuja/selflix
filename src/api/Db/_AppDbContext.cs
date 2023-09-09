@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using selflix.Services;
+using Serilog;
 
 namespace selflix.Db;
 
@@ -40,17 +41,55 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         {
             e.HasKey(e => e.LibraryId);
             e.HasMany(e => e.Users).WithMany(e => e.Libraries);
+            e.HasMany(e => e.Movies).WithOne(e => e.Library).HasForeignKey(e => e.LibraryId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.Series).WithOne(e => e.Library).HasForeignKey(e => e.LibraryId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Movie>(e =>
+        {
+            e.HasKey(e => e.MovieId);
+            e.HasMany(e => e.Views).WithOne(e => e.Movie).HasForeignKey(e => e.MovieId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Serie>(e =>
+        {
+            e.HasKey(e => e.SerieId);
+            e.HasMany(e => e.Episodes).WithOne(e => e.Serie).HasForeignKey(e => e.SerieId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SerieEpisode>(e =>
+        {
+            e.HasKey(e => e.SerieEpisodeId);
+            e.HasMany(e => e.Views).WithOne(e => e.SerieEpisode).HasForeignKey(e => e.SerieEpisodeId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<User>(e =>
         {
             e.HasKey(e => e.UserId);
+            e.HasMany(e => e.Devices).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.Watchers).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<UserDevice>(e =>
         {
             e.HasKey(e => e.UserDeviceId);
-            e.HasOne(e => e.User).WithMany(e => e.Devices).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Watcher>(e =>
+        {
+            e.HasKey(e => e.WatcherId);
+            e.HasMany(e => e.Movies).WithOne(e => e.Watcher).HasForeignKey(e => e.WatcherId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.SerieEpisodes).WithOne(e => e.Watcher).HasForeignKey(e => e.WatcherId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<WatcherMovie>(e =>
+        {
+            e.HasKey(e => new { e.WatcherId, e.MovieId });
+        });
+
+        builder.Entity<WatcherSerieEpisode>(e =>
+        {
+            e.HasKey(e => new { e.WatcherId, e.SerieEpisodeId });
         });
 
         // SQLite conversions
@@ -70,7 +109,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
                 var spanProperties = entityType.ClrType.GetProperties()
                     .Where(p => p.PropertyType == typeof(TimeSpan) || p.PropertyType == typeof(TimeSpan?));
                 foreach (var property in spanProperties)
-                    builder.Entity(entityType.Name).Property(property.Name).HasConversion<double>();
+                    builder.Entity(entityType.Name).Property(property.Name).HasConversion<long>();
             }
     }
     public async ValueTask InitializeDefaults(IPasswordHasher hasher)
@@ -79,13 +118,17 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         var adminHash = hasher.HashPassword(adminPass);
         var adminUser = new User("admin", adminHash, true);
         Users.Add(adminUser);
-
         await SaveChangesAsync();
 
         if (!Debugger.IsAttached)
+        {
+            Log.Warning("Generated default admin password {Password}, please disable the user after initial login", adminPass);
             return;
+        }
 
-
+        var devHash = hasher.HashPassword("dev");
+        var devUser = new User("dev", devHash, true);
+        Users.Add(devUser);
         await SaveChangesAsync();
     }
 }
