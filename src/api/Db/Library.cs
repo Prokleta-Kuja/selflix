@@ -14,12 +14,13 @@ public class Library
         Type = type;
     }
     public int LibraryId { get; set; }
-    public required string Name { get; set; }
-    public required string MediaPath { get; set; }
+    public string Name { get; set; }
+    public string MediaPath { get; set; }
     public DateTime? LastIndex { get; set; }
     public LibraryType Type { get; set; }
 
     public virtual List<User> Users { get; set; } = new();
+    public virtual List<Video> Videos { get; set; } = new();
     public virtual List<Movie> Movies { get; set; } = new();
     public virtual List<Serie> Series { get; set; } = new();
 }

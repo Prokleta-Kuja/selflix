@@ -41,7 +41,7 @@ public static class C
         public static readonly string MediaData = $"{Root}/media";
         public static string MediaDataFor(string file) => Path.Combine(MediaData, file);
         public static readonly string Sqlite = ConfigDataFor("app.db");
-        public static readonly string Hangfire = ConfigDataFor("queue.db");
+        public static readonly string Hangfire = ConfigDataFor("jobs.db");
         public static readonly string AppDbConnectionString = $"Data Source={Sqlite}";
         public static readonly string HangfireConnectionString = $"Data Source={Hangfire}";
     }
