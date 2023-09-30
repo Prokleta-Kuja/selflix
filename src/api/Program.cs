@@ -103,7 +103,7 @@ public class Program
             builder.Services.AddHangfireServer(o =>
             {
                 o.ServerName = nameof(selflix);
-                o.WorkerCount = Math.Max(2, Environment.ProcessorCount / 2);
+                o.WorkerCount = 1;//Math.Max(2, Environment.ProcessorCount / 2);
             });
 
             builder.Services.AddHttpClient<HibpService>();
@@ -172,7 +172,10 @@ public class Program
             await db.InitializeDefaults(hasher);
         }
 
-        var job = ActivatorUtilities.CreateInstance<Jobs.FullIndex>(scope.ServiceProvider);
-        await job.RunAsync(1, CancellationToken.None);
+        if (C.IsDebug)
+        {
+            var job = ActivatorUtilities.CreateInstance<Jobs.IndexLibrary>(scope.ServiceProvider);
+            await job.RunAsync(1, CancellationToken.None);
+        }
     }
 }
