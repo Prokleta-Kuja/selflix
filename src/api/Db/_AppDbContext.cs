@@ -69,8 +69,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         builder.Entity<Watcher>(e =>
         {
             e.HasKey(e => e.WatcherId);
-            e.HasMany(e => e.Movies).WithOne(e => e.Watcher).HasForeignKey(e => e.WatcherId).OnDelete(DeleteBehavior.Cascade);
-            e.HasMany(e => e.SerieEpisodes).WithOne(e => e.Watcher).HasForeignKey(e => e.WatcherId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.Videos).WithOne(e => e.Watcher).HasForeignKey(e => e.WatcherId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<WatcherVideo>(e =>
@@ -120,15 +119,13 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         Users.AddRange(devUser, usrUser);
         await SaveChangesAsync();
 
-        var otherLibrary = new Library("Fake other", "fake_other");
-        var movieLibrary = new Library("Fake movies", "fake_movie");
-        var serieLibrary = new Library("Fake series", "fake_series");
+        var firstLibrary = new Library("First", "first");
 
-        Libraries.AddRange(otherLibrary, movieLibrary, serieLibrary);
+        Libraries.AddRange(firstLibrary);
         await SaveChangesAsync();
 
-        devUser.Libraries.Add(otherLibrary); devUser.Libraries.Add(movieLibrary); devUser.Libraries.Add(serieLibrary);
-        usrUser.Libraries.Add(otherLibrary); usrUser.Libraries.Add(movieLibrary); usrUser.Libraries.Add(serieLibrary);
+        devUser.Libraries.Add(firstLibrary);
+        usrUser.Libraries.Add(firstLibrary);
 
         var uno = new Watcher("Uno");
         var dos = new Watcher("Dos");
@@ -144,31 +141,48 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         UserDevices.Add(tv);
         await SaveChangesAsync();
 
-        var suffixes = new List<string> { "ABC", "DEF", "GHI" };
-        foreach (var suffix in suffixes)
+        var libPath = C.Paths.MediaDataFor(firstLibrary.MediaPath);
+        var files = new string[]{
+            "Video Without Info/NoInfoVideo.AVI",
+            "Video in a dir/DirVideo.mkv",
+            "Video in a dir/DirVideo.nfo",
+            "Video in a dir2/Video in a dir1/Dir2Video.mkv",
+            "Video in a dir2/Video in a dir1/Dir2Video.nfo",
+            "Video in a dir3/Video in a dir2/Video in a dir1/Dir3Video.mkv",
+            "Video in a dir3/Video in a dir2/Video in a dir1/Dir3Video.nfo",
+
+            "Mixed in a dir2/Video in a dir1/Video in a dir1/MixedVideo.mkv",
+            "Mixed in a dir2/Video in a dir1/Video in a dir1/MixedVideo.nfo",
+            "Mixed in a dir2/No video in a dir1/Video in a dir1/NoVideo1.nfo",
+            "Mixed in a dir2/No video in a dir1/Video in a dir1/NoVideo2.nfo",
+        };
+
+        foreach (var file in files)
         {
-            otherLibrary.Videos.Add(new Video($"Fake video {suffix}", $"fake_video_{suffix}.mkv") { Duration = TimeSpan.FromMinutes(90) });
-            otherLibrary.Videos.Add(new Video($"Fake movie {suffix}", $"fake_movie_{suffix}.mkv") { Duration = TimeSpan.FromMinutes(120) });
-            otherLibrary.Videos.Add(new Video($"Fake series {suffix}", $"fake_series_{suffix}.mkv") { Duration = TimeSpan.FromMinutes(45) });
+            var filePath = Path.Join(libPath, file);
+            new FileInfo(filePath).Directory?.Create();
+            File.WriteAllText(filePath, string.Empty);
         }
+
+        // firstLibrary.Videos.Add(new Video($"Fake video {suffix}", $"fake_video_{suffix}.mkv") { Duration = TimeSpan.FromMinutes(90) });
         await SaveChangesAsync();
 
-        AddWatchedVideo(otherLibrary.Videos[0], uno, 93);
-        AddWatchedVideo(otherLibrary.Videos[1], uno, 33);
-        AddWatchedVideo(otherLibrary.Videos[1], dos, 53);
-        AddWatchedVideo(otherLibrary.Videos[2], dos, 94);
+        // AddWatchedVideo(firstLibrary.Videos[0], uno, 93);
+        // AddWatchedVideo(firstLibrary.Videos[1], uno, 33);
+        // AddWatchedVideo(firstLibrary.Videos[1], dos, 53);
+        // AddWatchedVideo(firstLibrary.Videos[2], dos, 94);
 
-        await SaveChangesAsync();
+        // await SaveChangesAsync();
 
-        void AddWatchedVideo(Video video, Watcher watcher, int percentage)
-        {
-            WatcherVideos.Add(new()
-            {
-                VideoId = video.VideoId,
-                WatcherId = watcher.WatcherId,
-                Percentage = percentage,
-                LastPosition = percentage / 100d * video.Duration!.Value
-            });
-        }
+        // void AddWatchedVideo(Video video, Watcher watcher, int percentage)
+        // {
+        //     WatcherVideos.Add(new()
+        //     {
+        //         VideoId = video.VideoId,
+        //         WatcherId = watcher.WatcherId,
+        //         Percentage = percentage,
+        //         LastPosition = percentage / 100d * video.Duration!.Value
+        //     });
+        // }
     }
 }

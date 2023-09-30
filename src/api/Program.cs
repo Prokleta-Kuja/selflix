@@ -172,6 +172,7 @@ public class Program
             await db.InitializeDefaults(hasher);
         }
 
-        var user = await db.Users.FirstAsync();
+        var job = ActivatorUtilities.CreateInstance<Jobs.FullIndex>(scope.ServiceProvider);
+        await job.RunAsync(1, CancellationToken.None);
     }
 }

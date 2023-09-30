@@ -16,6 +16,5 @@ public class Watcher
     public string Name { get; set; }
 
     public User? User { get; set; }
-    public virtual List<WatcherMovie> Movies { get; set; } = new();
-    public virtual List<WatcherSerieEpisode> SerieEpisodes { get; set; } = new();
+    public virtual List<WatcherVideo> Videos { get; set; } = new();
 }

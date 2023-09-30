@@ -33,6 +33,12 @@ public static class C
             Locale = CultureInfo.InvariantCulture;
         }
     }
+    static readonly HashSet<string> s_videoExtensions = new(StringComparer.InvariantCultureIgnoreCase) { ".mkv", ".avi", ".mp4", ".mpeg" };
+    public static bool IsVideoFile(string path)
+    {
+        var ext = Path.GetExtension(path);
+        return s_videoExtensions.Contains(ext);
+    }
     public static class Paths
     {
         static string Root => IsDebug ? Path.Join(Environment.CurrentDirectory, "/data") : "/data";
