@@ -1,4 +1,5 @@
 using Hangfire;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using selflix.Db;
@@ -7,6 +8,7 @@ namespace selflix.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[AllowAnonymous]
 public class Test2Controller : ControllerBase
 {
     readonly AppDbContext _db;
@@ -19,7 +21,7 @@ public class Test2Controller : ControllerBase
         _job = job;
         _logger = logger;
     }
-    [HttpGet(Name = "kita")]
+    [HttpGet(Name = "test2")]
     public async Task GetAsync()
     {
         _logger.LogInformation("Starting job");

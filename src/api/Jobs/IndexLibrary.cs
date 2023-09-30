@@ -65,7 +65,7 @@ public class IndexLibrary
         }
         await _db.SaveChangesAsync(token);
 
-        _logger.LogInformation("Indexing library {LibraryName} complete", library.Name, libPath);
+        _logger.LogInformation("Indexing library {LibraryName} complete", library.Name);
     }
 
     async Task<Video> GetVideoAsync(string libPath, string filePath, CancellationToken token)
