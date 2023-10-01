@@ -29,6 +29,12 @@
             }
         },
         {
+            "name": "Web",
+            "type": "node-terminal",
+            "command": "npm run dev --prefix src/web",
+            "request": "launch"
+        },
+        {
             "name": "Android",
             "type": "node-terminal",
             "command": "npm run start --prefix src/native",

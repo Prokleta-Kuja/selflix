@@ -134,7 +134,7 @@ public class Program
                 {
                     spa.Options.SourcePath = "../web";
                     if (app.Environment.IsDevelopment())
-                        spa.UseProxyToSpaDevelopmentServer("http://localhost:3000");
+                        spa.UseProxyToSpaDevelopmentServer("http://localhost:5173");
                 });
             });
 

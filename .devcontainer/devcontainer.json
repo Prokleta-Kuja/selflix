@@ -4,7 +4,6 @@
 	"name": "selflix",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/dotnet:0-7.0",
-
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		"ghcr.io/devcontainers/features/node:1": {
@@ -12,7 +11,6 @@
 			"nvmVersion": "latest"
 		}
 	},
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [5000, 5001],
 	// "portsAttributes": {
@@ -21,33 +19,30 @@
 	//		}
 	// }
 	"appPort": [
-		"5000:5000",
-		"5001:5001",
+		"5080:5080",
+		"5443:5443",
 		"8081:8081"
 	],
 	"containerEnv": {
-		"SDK_VERSION":"commandlinetools-linux-9477386_latest.zip",
-		"ANDROID_BUILD_VERSION":"34",
-		"ANDROID_TOOLS_VERSION":"34.0.0",
-		"NDK_VERSION":"25.1.8937393",
-		"CMAKE_VERSION":"3.22.1",
-		"ADB_INSTALL_TIMEOUT":"10",
-		"ANDROID_HOME":"/opt/android",
-		"JAVA_HOME":"/usr/lib/jvm/java-17-openjdk-amd64"
+		"SDK_VERSION": "commandlinetools-linux-9477386_latest.zip",
+		"ANDROID_BUILD_VERSION": "34",
+		"ANDROID_TOOLS_VERSION": "34.0.0",
+		"NDK_VERSION": "25.1.8937393",
+		"CMAKE_VERSION": "3.22.1",
+		"ADB_INSTALL_TIMEOUT": "10",
+		"ANDROID_HOME": "/opt/android",
+		"JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
 	},
 	"remoteEnv": {
-		"ANDROID_SDK_ROOT":"${containerEnv:ANDROID_HOME}",
-		"ANDROID_NDK_HOME":"${containerEnv:ANDROID_HOME}/ndk/${containerEnv:NDK_VERSION}",
-		"CMAKE_BIN_PATH":"${containerEnv:ANDROID_HOME}/cmake/${containerEnv:CMAKE_VERSION}/bin",
-		"PATH":"${containerEnv:CMAKE_BIN_PATH}:${containerEnv:ANDROID_HOME}/cmdline-tools/latest/bin:${containerEnv:ANDROID_HOME}/emulator:${containerEnv:ANDROID_HOME}/platform-tools:${containerEnv:ANDROID_HOME}/tools:${containerEnv:ANDROID_HOME}/tools/bin:${containerEnv:PATH}"
+		"ANDROID_SDK_ROOT": "${containerEnv:ANDROID_HOME}",
+		"ANDROID_NDK_HOME": "${containerEnv:ANDROID_HOME}/ndk/${containerEnv:NDK_VERSION}",
+		"CMAKE_BIN_PATH": "${containerEnv:ANDROID_HOME}/cmake/${containerEnv:CMAKE_VERSION}/bin",
+		"PATH": "${containerEnv:CMAKE_BIN_PATH}:${containerEnv:ANDROID_HOME}/cmdline-tools/latest/bin:${containerEnv:ANDROID_HOME}/emulator:${containerEnv:ANDROID_HOME}/platform-tools:${containerEnv:ANDROID_HOME}/tools:${containerEnv:ANDROID_HOME}/tools/bin:${containerEnv:PATH}"
 	},
-
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": ".devcontainer/dependencies.sh;npm i --prefix src/native/;dotnet restore"
-
+	"postCreateCommand": ".devcontainer/dependencies.sh;npm i --prefix src/native/;npm i --prefix src/web/;dotnet restore;echo \"alias ll='ls -hal'\" >> ~/.bashrc"
 	// Configure tool-specific properties.
 	// "customizations": {},
-
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	//"remoteUser": "root"
 }
