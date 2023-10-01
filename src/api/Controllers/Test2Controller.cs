@@ -25,17 +25,20 @@ public class Test2Controller : ControllerBase
     public async Task<IActionResult> GetAsync()
     {
         _logger.LogInformation("Starting job");
-        var library = await _db.Libraries.FirstOrDefaultAsync();
-        if (library == null)
+        var hasLibraries = await _db.Libraries.AnyAsync();
+        if (!hasLibraries)
         {
-            library = new Library("Movies", "movies");
-            _db.Libraries.Add(library);
+            var movies = new Library("Movies", "movies");
+            _db.Libraries.Add(movies);
+            var tv = new Library("Tv Shows", "tv");
+            _db.Libraries.Add(tv);
+            var cartoons = new Library("Cartoons", "cartoons");
+            _db.Libraries.Add(cartoons);
             await _db.SaveChangesAsync();
-            _logger.LogInformation("Created library");
+            _logger.LogInformation("Created Libraries");
         }
-        _job.Enqueue<Jobs.IndexLibrary>(j => j.RunAsync(library.LibraryId, CancellationToken.None));
 
-        _logger.LogInformation("Job started");
+        _job.Enqueue<Jobs.IndexAll>(j => j.RunAsync(CancellationToken.None));
         return Ok("Ok");
     }
 }
