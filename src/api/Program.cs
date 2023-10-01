@@ -174,8 +174,8 @@ public class Program
 
         if (C.IsDebug)
         {
-            var job = ActivatorUtilities.CreateInstance<Jobs.IndexLibrary>(scope.ServiceProvider);
-            await job.RunAsync(1, CancellationToken.None);
+            // var job = ActivatorUtilities.CreateInstance<Jobs.IndexLibrary>(scope.ServiceProvider);
+            // await job.RunAsync(1, CancellationToken.None);
         }
     }
 }

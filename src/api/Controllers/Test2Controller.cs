@@ -7,7 +7,7 @@ using selflix.Db;
 namespace selflix.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 [AllowAnonymous]
 public class Test2Controller : ControllerBase
 {
