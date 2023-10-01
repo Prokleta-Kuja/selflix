@@ -31,6 +31,7 @@ public class Test2Controller : ControllerBase
             library = new Library("Movies", "movies");
             _db.Libraries.Add(library);
             await _db.SaveChangesAsync();
+            _logger.LogInformation("Created library");
         }
         _job.Enqueue<Jobs.IndexLibrary>(j => j.RunAsync(library.LibraryId, CancellationToken.None));
 

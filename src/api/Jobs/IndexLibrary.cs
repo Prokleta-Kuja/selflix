@@ -37,14 +37,14 @@ public class IndexLibrary
 
         var existingVideoPaths = new HashSet<string>();
         // Remove missing
-        _logger.LogDebug("Removing missing videos");
+        _logger.LogInformation("Removing missing videos");
         foreach (var video in library.Videos)
         {
             var videoPath = Path.Join(libPath, video.LibraryPath);
             if (!File.Exists(videoPath))
             {
                 _db.Videos.Remove(video);
-                _logger.LogDebug("Removed video {VideoTitle} ({VideoPath})", video.Title, videoPath);
+                _logger.LogInformation("Removed video {VideoTitle} ({VideoPath})", video.Title, videoPath);
             }
             else
                 existingVideoPaths.Add(videoPath);
@@ -52,7 +52,7 @@ public class IndexLibrary
         await _db.SaveChangesAsync(token);
 
         // Add new
-        _logger.LogDebug("Adding new videos");
+        _logger.LogInformation("Adding new videos");
         var allFiles = Directory.EnumerateFiles(libPath, "*", SearchOption.AllDirectories);
         foreach (var filePath in allFiles)
         {
@@ -61,7 +61,7 @@ public class IndexLibrary
 
             var video = await GetVideoAsync(libPath, filePath, token);
             library.Videos.Add(video);
-            _logger.LogDebug("Added video {VideoTitle} ({VideoPath})", video.Title, filePath);
+            _logger.LogInformation("Added video {VideoTitle} ({VideoPath})", video.Title, filePath);
         }
         await _db.SaveChangesAsync(token);
 

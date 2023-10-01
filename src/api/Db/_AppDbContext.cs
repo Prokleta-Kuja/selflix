@@ -145,16 +145,10 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         var files = new string[]{
             "Video Without Info/NoInfoVideo.AVI",
             "Video in a dir/DirVideo.mkv",
-            "Video in a dir/DirVideo.nfo",
             "Video in a dir2/Video in a dir1/Dir2Video.mkv",
-            "Video in a dir2/Video in a dir1/Dir2Video.nfo",
             "Video in a dir3/Video in a dir2/Video in a dir1/Dir3Video.mkv",
-            "Video in a dir3/Video in a dir2/Video in a dir1/Dir3Video.nfo",
 
             "Mixed in a dir2/Video in a dir1/Video in a dir1/MixedVideo.mkv",
-            "Mixed in a dir2/Video in a dir1/Video in a dir1/MixedVideo.nfo",
-            "Mixed in a dir2/No video in a dir1/Video in a dir1/NoVideo1.nfo",
-            "Mixed in a dir2/No video in a dir1/Video in a dir1/NoVideo2.nfo",
         };
 
         foreach (var file in files)
