@@ -22,10 +22,10 @@ public class HangfireAuthFilter : IDashboardAuthorizationFilter
     public bool Authorize(DashboardContext context)
     {
         var ctx = context.GetHttpContext();
-        if (!ctx.User.Identity?.IsAuthenticated ?? true)
+        if (!ctx.User.Identity?.IsAuthenticated ?? false)
             return false;
 
-        // TODO: implement isAdmin claim
-        return false;
+        var role = ctx.User.FindFirst(ClaimTypes.Role)?.Value;
+        return role == C.ADMIN_ROLE;
     }
 }

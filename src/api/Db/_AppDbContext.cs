@@ -110,12 +110,12 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         if (!Debugger.IsAttached)
         {
-            var adminPass = IPasswordHasher.GeneratePassword(16);
-            var adminHash = hasher.HashPassword(adminPass);
-            var adminUser = new User("admin", adminHash, true);
-            Users.Add(adminUser);
-            await SaveChangesAsync();
-            Log.Warning("Generated default admin password {Password}, please disable the user after initial login", adminPass);
+            // var adminPass = IPasswordHasher.GeneratePassword(16);
+            // var adminHash = hasher.HashPassword(adminPass);
+            // var adminUser = new User("admin", adminHash, true);
+            // Users.Add(adminUser);
+            // await SaveChangesAsync();
+            // Log.Warning("Generated default admin password {Password}, please disable the user after initial login", adminPass);
             return;
         }
 
@@ -123,7 +123,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         var devUser = new User("dev", devHash, true);
 
         var usrHash = hasher.HashPassword("usr");
-        var usrUser = new User("usr", usrHash, true);
+        var usrUser = new User("usr", usrHash, false);
 
         Users.AddRange(devUser, usrUser);
         await SaveChangesAsync();

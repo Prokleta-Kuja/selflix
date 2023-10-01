@@ -9,6 +9,7 @@ public static class C
     public static readonly CultureInfo Locale;
     public static readonly string PostgresConnectionString;
     public static readonly DbContextType DbContextType;
+    public const string ADMIN_ROLE = "admin";
     static C()
     {
         IsDebug = Environment.GetEnvironmentVariable("DEBUG") == "1";

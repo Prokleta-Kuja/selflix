@@ -28,6 +28,7 @@ public class User
     public string Locale { get; set; }
     public string PasswordHash { get; set; }
     public bool IsAdmin { get; set; }
+    public byte[]? OtpKey { get; set; }
     public DateTime Created { get; set; }
     public DateTime? Disabled { get; set; }
     public DateTime? LastLogin { get; set; }
