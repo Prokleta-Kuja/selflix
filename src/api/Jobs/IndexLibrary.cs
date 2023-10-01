@@ -30,22 +30,33 @@ public class IndexLibrary
         var libPath = C.Paths.MediaDataFor(library.MediaPath);
         if (!Directory.Exists(libPath))
         {
-            _logger.LogError("Library path {LibraryPath} does not exist", libPath);
+            _logger.LogError("Library path {LibraryPath} does not exist or is currently unavailable", libPath);
             return;
         }
 
         _logger.LogInformation("Indexing library {LibraryName} ({LibraryPath})", library.Name, libPath);
 
+        await ScanAndUpdateVideoFilesAsync(library, libPath, token);
+
+        await RebuildDirHierarchy(libraryId, token);
+
+        await AddMissingDirsToVideos(libraryId, token);
+
+        _logger.LogInformation("Indexing library {LibraryName} complete", library.Name);
+    }
+
+    async Task ScanAndUpdateVideoFilesAsync(Library library, string libPath, CancellationToken token)
+    {
         var existingVideoPaths = new HashSet<string>();
         // Remove missing
-        _logger.LogInformation("Removing missing videos");
+        _logger.LogDebug("Removing missing videos");
         foreach (var video in library.Videos)
         {
             var videoPath = Path.Join(libPath, video.LibraryPath);
             if (!File.Exists(videoPath))
             {
                 _db.Videos.Remove(video);
-                _logger.LogInformation("Removed video {VideoTitle} ({VideoPath})", video.Title, videoPath);
+                _logger.LogDebug("Removed video {VideoTitle} ({VideoPath})", video.Title, videoPath);
             }
             else
                 existingVideoPaths.Add(videoPath);
@@ -53,7 +64,7 @@ public class IndexLibrary
         await _db.SaveChangesAsync(token);
 
         // Add new
-        _logger.LogInformation("Adding new videos");
+        _logger.LogDebug("Adding new videos");
         var allFiles = Directory.EnumerateFiles(libPath, "*", SearchOption.AllDirectories);
         foreach (var filePath in allFiles)
         {
@@ -62,12 +73,11 @@ public class IndexLibrary
 
             var video = await GetVideoAsync(libPath, filePath, token);
             library.Videos.Add(video);
-            _logger.LogInformation("Added video {VideoTitle} ({VideoPath})", video.Title, filePath);
+            _logger.LogDebug("Added video {VideoTitle} ({VideoPath})", video.Title, filePath);
+            await _db.SaveChangesAsync(token);
         }
         library.LastIndex = DateTime.UtcNow;
         await _db.SaveChangesAsync(token);
-
-        _logger.LogInformation("Indexing library {LibraryName} complete", library.Name);
     }
 
     async Task<Video> GetVideoAsync(string libPath, string filePath, CancellationToken token)
@@ -86,5 +96,89 @@ public class IndexLibrary
             _logger.LogError("Cannot get media info for {FilePath}", filePath);
         }
         return video;
+    }
+
+    async Task RebuildDirHierarchy(int libraryId, CancellationToken token)
+    {
+        _logger.LogInformation("Rebuilding dir hierarchy");
+        var levels = new Dictionary<int, Dictionary<string, string>>();
+        var videoPaths = await _db.Videos.AsNoTracking().Where(v => v.LibraryId == libraryId).Select(v => v.LibraryPath).ToListAsync(token);
+        foreach (var videoPath in videoPaths)
+        {
+            var parentDir = Path.GetDirectoryName(videoPath);
+            if (string.IsNullOrWhiteSpace(parentDir))
+                continue;
+            var parentParts = parentDir.Split(Path.DirectorySeparatorChar);
+            for (int i = 0; i < parentParts.Length; i++)
+            {
+                if (!levels.ContainsKey(i))
+                    levels.Add(i, new());
+
+                var dirName = parentParts[i];
+                var dirPath = string.Join(Path.DirectorySeparatorChar, parentParts.Take(i + 1));
+                if (!levels[i].ContainsKey(dirPath))
+                    levels[i].Add(dirPath, dirName);
+            }
+        }
+
+        foreach (var level in levels)
+        {
+            var existingDirs = await _db.Dirs.Where(d => d.LibraryId == libraryId && d.Depth == level.Key).ToDictionaryAsync(d => d.LibraryPath, d => d, token);
+            // Remove no longer existing dirs
+            foreach (var existingDir in existingDirs)
+                if (!level.Value.ContainsKey(existingDir.Key))
+                {
+                    _db.Dirs.Remove(existingDir.Value);
+                    _logger.LogDebug("Removing dir {DirPath}", existingDir.Key);
+                }
+
+            // Add new dirs
+            var parentDirs = await _db.Dirs.Where(d => d.LibraryId == libraryId && d.Depth == level.Key - 1).ToDictionaryAsync(d => d.LibraryPath, d => d, token);
+            foreach (var levelDir in level.Value)
+                if (!existingDirs.ContainsKey(levelDir.Key))
+                {
+                    var newDir = new Dir(levelDir.Value, levelDir.Key)
+                    {
+                        Depth = level.Key,
+                        LibraryId = libraryId,
+                    };
+                    var parentPath = Path.GetDirectoryName(levelDir.Key);
+                    if (!string.IsNullOrWhiteSpace(parentPath) && parentDirs.TryGetValue(parentPath, out var parentDir))
+                    {
+                        parentDir.SubDirs.Add(newDir);
+                        _logger.LogDebug("Adding dir {DirName} to parent {ParentDirName}", newDir.Name, parentDir.Name);
+                    }
+                    else
+                    {
+                        _db.Dirs.Add(newDir);
+                        _logger.LogDebug("Adding dir {DirName} to root", newDir.Name);
+                    }
+                }
+            await _db.SaveChangesAsync(token);
+        }
+    }
+
+    async Task AddMissingDirsToVideos(int libraryId, CancellationToken token)
+    {
+        var dirs = await _db.Dirs.AsNoTracking().Where(d => d.LibraryId == libraryId).ToDictionaryAsync(d => d.LibraryPath, d => d.DirId, token);
+        var videos = await _db.Videos.Where(v => v.LibraryId == libraryId && !v.DirId.HasValue).ToDictionaryAsync(v => v.LibraryPath, v => v, token);
+        foreach (var video in videos)
+        {
+            var dirPath = Path.GetDirectoryName(video.Key);
+            if (string.IsNullOrWhiteSpace(dirPath))
+                continue;
+
+            if (!dirs.TryGetValue(dirPath, out var dirId))
+            {
+                _logger.LogError("Could not find dir {DirPath} for movie", dirPath);
+                continue;
+            }
+            else
+            {
+                _logger.LogDebug("Found dir for video {VideoTitle}", video.Value.Title);
+                video.Value.DirId = dirId;
+            }
+        }
+        await _db.SaveChangesAsync(token);
     }
 }

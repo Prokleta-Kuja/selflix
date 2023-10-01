@@ -21,6 +21,7 @@ public class PostgresDbContext : AppDbContext
 public partial class AppDbContext : DbContext, IDataProtectionKeyContext
 {
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
+    public DbSet<Dir> Dirs => Set<Dir>();
     public DbSet<Library> Libraries => Set<Library>();
     public DbSet<Video> Videos => Set<Video>();
     public DbSet<User> Users => Set<User>();
@@ -41,11 +42,19 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<Dir>(e =>
+        {
+            e.HasKey(e => e.DirId);
+            e.HasMany(e => e.SubDirs).WithOne(e => e.ParentDir).HasForeignKey(e => e.ParentDirId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.Videos).WithOne(e => e.Dir).HasForeignKey(e => e.DirId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         builder.Entity<Library>(e =>
         {
             e.HasKey(e => e.LibraryId);
             e.HasMany(e => e.Users).WithMany(e => e.Libraries);
             e.HasMany(e => e.Videos).WithOne(e => e.Library).HasForeignKey(e => e.LibraryId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.Dirs).WithOne(e => e.Library).HasForeignKey(e => e.LibraryId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<Video>(e =>

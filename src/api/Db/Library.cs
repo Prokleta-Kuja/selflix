@@ -17,6 +17,7 @@ public class Library
     public string MediaPath { get; set; }
     public DateTime? LastIndex { get; set; }
 
+    public virtual List<Dir> Dirs { get; set; } = new();
     public virtual List<User> Users { get; set; } = new();
     public virtual List<Video> Videos { get; set; } = new();
 }
