@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using FFMpegCore;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using selflix.Db;
@@ -63,6 +64,7 @@ public class IndexLibrary
             library.Videos.Add(video);
             _logger.LogInformation("Added video {VideoTitle} ({VideoPath})", video.Title, filePath);
         }
+        library.LastIndex = DateTime.UtcNow;
         await _db.SaveChangesAsync(token);
 
         _logger.LogInformation("Indexing library {LibraryName} complete", library.Name);
@@ -74,8 +76,15 @@ public class IndexLibrary
         var relativePath = Path.GetRelativePath(libPath, filePath);
         var video = new Video(title, relativePath);
 
-        // TODO: get duration from nfo or ffmpeg. ffmpeg could also know about subs, but maybe another job
-        await Task.CompletedTask;
+        try
+        {
+            var mediaInfo = await FFProbe.AnalyseAsync(filePath, null, token);
+            video.Duration = mediaInfo.Duration;
+        }
+        catch (Exception)
+        {
+            _logger.LogError("Cannot get media info for {FilePath}", filePath);
+        }
         return video;
     }
 }

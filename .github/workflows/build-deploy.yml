@@ -106,7 +106,7 @@ jobs:
         run: |
           curl \
             -u $notify_cred \
-            -H "Title: Poshtar deployed" \
+            -H "Title: Selflix deployed" \
             -H "Tags: octopus" \
             -H "Priority: 3" \
             -H "Actions: view, GitHub, $action_url, clear=true; \
@@ -125,7 +125,7 @@ jobs:
         run: |
           curl \
             -u $notify_cred \
-            -H "Title: Poshtar wasn't deployed" \
+            -H "Title: Selflix wasn't deployed" \
             -H "Tags: cursing_face" \
             -H "Priority: 4" \
             -H "Actions: view, GitHub, $action_url" \

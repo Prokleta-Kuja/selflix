@@ -17,6 +17,7 @@
 # PATH=${CMAKE_BIN_PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/emulator:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}
 
 sudo apt update -qq && sudo apt install -qq -y --no-install-recommends \
+        ffmpeg \
         apt-transport-https \
         curl \
         file \
