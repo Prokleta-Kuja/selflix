@@ -2,8 +2,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
 WORKDIR /app
 COPY ./src/api/out ./
 
-ENV LC_ALL C \
-    ASPNETCORE_URLS=http://*:5080 \
+ENV ASPNETCORE_URLS=http://*:5080 \
     LOCALE=en-US \
     TZ=America/Chicago
 

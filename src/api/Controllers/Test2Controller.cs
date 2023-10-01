@@ -22,7 +22,7 @@ public class Test2Controller : ControllerBase
         _logger = logger;
     }
     [HttpGet(Name = "test2")]
-    public async Task GetAsync()
+    public async Task<IActionResult> GetAsync()
     {
         _logger.LogInformation("Starting job");
         var library = await _db.Libraries.FirstOrDefaultAsync();
@@ -36,5 +36,6 @@ public class Test2Controller : ControllerBase
         _job.Enqueue<Jobs.IndexLibrary>(j => j.RunAsync(library.LibraryId, CancellationToken.None));
 
         _logger.LogInformation("Job started");
+        return Ok("Ok");
     }
 }
