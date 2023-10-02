@@ -25,48 +25,69 @@ export interface ITableParams {
   sortBy?: string
 }
 
-const getQueryKeys = (prefix?: string) => ({
-  size: prefix ? `${prefix}.${nameof<ITableParams>("size")}` : nameof<ITableParams>("size"),
-  page: prefix ? `${prefix}.${nameof<ITableParams>("page")}` : nameof<ITableParams>("page"),
-  ascending: prefix ? `${prefix}.${nameof<ITableParams>("ascending")}` : nameof<ITableParams>("ascending"),
-  sortBy: prefix ? `${prefix}.${nameof<ITableParams>("sortBy")}` : nameof<ITableParams>("sortBy"),
-})
+const minPageSize = 10,
+  defaultPageSize = 25,
+  maxPageSize = 100
+export const defaultPageSizes = [minPageSize, defaultPageSize, 50, maxPageSize]
 
 export const initParams = (query?: LocationQuery, prefix?: string): ITableParams => {
   const params: ITableParams = { page: 1, size: 25, total: 0, ascending: false }
   if (query) {
-    const keys = getQueryKeys(prefix);
-    if (keys.size in query && query[keys.size])
-      try {
-        const val = query[keys.size]!.toString();
-        params.size = parseInt(val);
-      } catch (e) {
-        console.error(`Couldn't parse query param ${keys.size}`, e);
+    const indexableParams = params as { [key: string]: any }
+    const trimPrefix = prefix ? `${prefix}.` : ''
+
+    Object.keys(query).forEach((prefixedKey) => {
+      if (!prefixedKey.startsWith(trimPrefix)) return
+
+      const key = trimPrefix ? prefixedKey.replace(trimPrefix, '') : prefixedKey
+
+      if (query[prefixedKey] == null) {
+        indexableParams[key] = true
+        return
       }
-    if (keys.page in query && query[keys.page])
-      try {
-        const val = query[keys.page]!.toString();
-        params.page = parseInt(val);
-      } catch (e) {
-        console.error(`Couldn't parse query param ${keys.page}`, e);
+      let val = parseInt(query[prefixedKey]!.toString())
+      if (isNaN(val)) val = parseFloat(query[prefixedKey]!.toString())
+      if (!isNaN(val)) {
+        indexableParams[key] = val
+        return
       }
-    if (keys.sortBy in query && query[keys.sortBy])
-      params.sortBy = query[keys.page]!.toString()
-    params.ascending = keys.ascending in query;
+
+      indexableParams[key] = query[prefixedKey]!.toString()
+    })
+  }
+
+  const sizeKey = nameof<ITableParams>('size')
+  if (sizeKey in params) {
+    const indexableParams = params as { [key: string]: any }
+    const val = parseInt(indexableParams[sizeKey])
+    if (isNaN(val)) indexableParams[sizeKey] = defaultPageSize
+    else if (val < minPageSize) indexableParams[sizeKey] = minPageSize
+    else if (val > maxPageSize) indexableParams[sizeKey] = maxPageSize
+    else if (!defaultPageSizes.some((size) => size === val))
+      indexableParams[sizeKey] = defaultPageSize
   }
 
   return params
 }
 
 export const getQuery = (params: ITableParams, prefix?: string): LocationQuery => {
-  const keys = getQueryKeys(prefix);
-  const query = { [keys.size]: params.size.toString(), [keys.page]: params.page.toString() };
-  if (params.sortBy)
-    query[keys.sortBy] = params.sortBy;
-  if (params.ascending)
-    query[keys.ascending] = '1'
+  const query: { [key: string]: string | null } = {}
+  const indexableParams = params as { [key: string]: any }
+  Object.keys(params).forEach((key) => {
+    if (key === nameof<ITableParams>('total')) return
 
-  return query;
+    const prefixedKey = prefix ? `${prefix}.${key}` : key
+    const type = typeof indexableParams[key]
+    if (type === 'boolean')
+      if (indexableParams[key]) {
+        query[prefixedKey] = null
+        return
+      } else return
+
+    query[prefixedKey] = indexableParams[key]
+  })
+
+  return query
 }
 
 export const updateParams = (
@@ -86,5 +107,3 @@ export const updateParams = (
   if (params.sortBy !== response.sortBy)
     params.sortBy = response.sortBy === null ? undefined : response.sortBy
 }
-
-export const defaultPageSizes = [10, 25, 50, 100]
