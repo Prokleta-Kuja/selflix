@@ -1,26 +1,31 @@
 <script setup lang="ts">
 import { reactive, watch } from "vue";
 import Search from '@/components/form/SearchBox.vue'
-import { Header, Pages, Sizes, type ITableParams, initParams, updateParams } from "@/components/table"
+import { Header, Pages, Sizes, type ITableParams, initParams, getQuery, updateParams } from "@/components/table"
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
 import { UserService, type UserLM } from "@/api";
 import XLg from '@/components/icons/XLg.vue'
 import CheckLg from '@/components/icons/CheckLg.vue'
+import { useRoute, useRouter } from "vue-router";
 
 interface IUserParams extends ITableParams {
     searchTerm?: string;
 }
-
-const props = defineProps<{ lastChange?: Date }>()
-const data = reactive<{ params: IUserParams, items: UserLM[], delete?: UserLM }>({ params: initParams(), items: [] });
+const route = useRoute()
+const router = useRouter()
+const props = defineProps<{ lastChange?: Date, queryPrefix?: string }>()
+const data = reactive<{ params: IUserParams, items: UserLM[], delete?: UserLM }>({ params: initParams(route.query, props.queryPrefix), items: [] });
 const refresh = (params?: ITableParams) => {
     if (params)
         data.params = params;
 
+    const query = { ...getQuery, ...getQuery(data.params, props.queryPrefix) }
+    router.push({ query });
     UserService.getUsers({ ...data.params })
         .then(r => {
             data.items = r.items;
             updateParams(data.params, r)
+            scrollTo(0, 0)
         });
 };
 const showDelete = (item: UserLM) => data.delete = item;
@@ -51,7 +56,7 @@ refresh();
 <template>
     <div class="d-flex flex-wrap">
         <Sizes class="me-3 mb-2" style="max-width:8rem" :params="data.params" :on-change="refresh" />
-        <Search autoFocus class="me-3 mb-2" style="max-width:16rem" placeholder="Pattern" v-model="data.params.searchTerm"
+        <Search autoFocus class="me-3 mb-2" style="max-width:16rem" placeholder="User name" v-model="data.params.searchTerm"
             :on-change="refresh" />
     </div>
     <div class="table-responsive">
@@ -67,7 +72,7 @@ refresh();
             <tbody>
                 <tr v-for="item in data.items" :key="item.id" class="align-middle">
                     <td>
-                        <RouterLink :to="{ name: 'route.userDetails', params: { id: item.id } }">{{ item.name }}
+                        <RouterLink :to="{ name: 'user', params: { id: item.id } }">{{ item.name }}
                         </RouterLink>
                     </td>
                     <td>
@@ -76,17 +81,11 @@ refresh();
                     </td>
                     <td>{{ disabledText(item.disabled) }}</td>
                     <td class="text-end p-1">
-                        <template>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-danger" title="Delete" @click="showDelete(item)">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                        class="bi bi-x-lg" viewBox="0 0 16 16">
-                                        <path
-                                            d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </template>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-danger" title="Delete" @click="showDelete(item)">
+                                <XLg />
+                            </button>
+                        </div>
                     </td>
                 </tr>
             </tbody>

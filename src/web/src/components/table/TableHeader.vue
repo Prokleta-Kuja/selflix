@@ -7,16 +7,15 @@ const props = defineProps<{ params: ITableParams, onSort: (params: ITableParams)
 const text = computed(() => {
     if (props.display)
         return props.display;
-    props.params.page = 1;
     return props.column[0].toUpperCase() + props.column.substring(1).toLowerCase();
 })
 
 const sort = () => {
     if (props.unsortable) return;
+    let ascending = props.params.ascending
     if (props.params.sortBy === props.column)
-        props.params.ascending = !props.params.ascending;
-    props.params.sortBy = props.column;
-    props.onSort(props.params);
+        ascending = !ascending;
+    props.onSort({ ...props.params, page: 1, sortBy: props.column, ascending });
 }
 </script>
 <template>

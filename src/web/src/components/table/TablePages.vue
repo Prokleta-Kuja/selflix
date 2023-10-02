@@ -2,43 +2,73 @@
 import { computed } from 'vue';
 import type { ITableParams } from '.';
 
-const props = defineProps<{ params: ITableParams, onSort: (params: ITableParams) => void, column: string, display?: string, unsortable?: boolean }>();
+const pageOffset = 2;
+const props = defineProps<{ params: ITableParams, onChange: (params: ITableParams) => void }>();
+const fmt = new Intl.NumberFormat();
+const counter = computed<{ startItem: string, endItem: string, totalItems: string, totalPages: number, pages: number[], startPage: number, endPage: number }>(() => {
+    const last = (props.params.page - 1) * props.params.size;
+    const startItem = fmt.format(last + 1);
+    const endItem = fmt.format(Math.min(last + props.params.size, props.params.total));
+    const totalItems = fmt.format(props.params.total);
+    const totalPages = Math.max(1, Math.ceil(props.params.total / props.params.size));
+    const startPage = Math.max(1, props.params.page - pageOffset);
+    const endPage = Math.min(totalPages, props.params.page + pageOffset);
+    const pages = [];
+    for (let i = startPage; i <= endPage; i++)
+        pages.push(i);
 
-const text = computed(() => {
-    if (props.display)
-        return props.display;
-    props.params.page = 1;
-    return props.column[0].toUpperCase() + props.column.substring(1).toLowerCase();
+    return { startItem, endItem, totalItems, totalPages, pages, startPage, endPage };
 })
 
-const sort = () => {
-    if (props.unsortable) return;
-    if (props.params.sortBy === props.column)
-        props.params.ascending = !props.params.ascending;
-    props.params.sortBy = props.column;
-    props.onSort(props.params);
+const change = (page: number) => {
+    if (props.params.page === page) return;
+    props.onChange({ ...props.params, page: page });
 }
 </script>
 <template>
-    <th @click="sort" :class="{ pointer: !unsortable }">
-        <b>{{ text }}</b>
-        <span class="ms-2" v-if="!unsortable && props.params.sortBy === props.column">
-            <template v-if="props.params.ascending">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sort-up"
-                    viewBox="0 0 16 16">
-                    <path
-                        d="M3.5 12.5a.5.5 0 0 1-1 0V3.707L1.354 4.854a.5.5 0 1 1-.708-.708l2-1.999.007-.007a.498.498 0 0 1 .7.006l2 2a.5.5 0 1 1-.707.708L3.5 3.707V12.5zm3.5-9a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zM7.5 6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zm0 3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3zm0 3a.5.5 0 0 0 0 1h1a.5.5 0 0 0 0-1h-1z" />
-                </svg>
-            </template>
-            <template v-else>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sort-down"
-                    viewBox="0 0 16 16">
-                    <path
-                        d="M3.5 2.5a.5.5 0 0 0-1 0v8.793l-1.146-1.147a.5.5 0 0 0-.708.708l2 1.999.007.007a.497.497 0 0 0 .7-.006l2-2a.5.5 0 0 0-.707-.708L3.5 11.293V2.5zm3.5 1a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zM7.5 6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zm0 3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3zm0 3a.5.5 0 0 0 0 1h1a.5.5 0 0 0 0-1h-1z" />
-                </svg>
-            </template>
-        </span>
-    </th>
+    <div class="d-flex justify-content-between align-items-center flex-wrap-reverse">
+        <div v-if="props.params.total === 0">No results</div>
+        <div v-else>Showing {{ counter.startItem }} to {{ counter.endItem }} of {{ counter.totalItems }} entries.</div>
+        <nav>
+            <ul class="pagination mb-0">
+                <li class="page-item" :class="{ disabled: props.params.page === 1, pointer: props.params.page !== 1 }"
+                    @click="change(1)">
+                    <span class="page-link" aria-label="Previous">
+                        <span aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                fill="currentColor" class="bi bi-skip-backward-fill" viewBox="0 0 16 16">
+                                <path
+                                    d="M.5 3.5A.5.5 0 0 0 0 4v8a.5.5 0 0 0 1 0V8.753l6.267 3.636c.54.313 1.233-.066 1.233-.697v-2.94l6.267 3.636c.54.314 1.233-.065 1.233-.696V4.308c0-.63-.693-1.01-1.233-.696L8.5 7.248v-2.94c0-.63-.692-1.01-1.233-.696L1 7.248V4a.5.5 0 0 0-.5-.5z" />
+                            </svg></span>
+                    </span>
+                </li>
+
+                <li class="page-item disabled" v-if="counter.startPage !== 1">
+                    <span class="page-link">...</span>
+                </li>
+
+                <li class="page-item" v-for="page in counter.pages" :key="page" @click="change(page)">
+                    <span class="page-link"
+                        :class="{ active: props.params.page === page, pointer: props.params.page !== page }">{{ page
+                        }}</span>
+                </li>
+
+                <li class="page-item disabled" v-if="counter.endPage !== counter.totalPages">
+                    <span class="page-link">...</span>
+                </li>
+
+                <li class="page-item" @click="change(counter.totalPages)"
+                    :class="{ disabled: props.params.page === counter.totalPages, pointer: props.params.page !== counter.totalPages }">
+                    <span class="page-link" aria-label="Next">
+                        <span aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
+                                <path
+                                    d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5z" />
+                            </svg></span>
+                    </span>
+                </li>
+            </ul>
+        </nav>
+    </div>
 </template>
 <style>
 .pointer {
