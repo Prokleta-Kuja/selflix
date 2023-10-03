@@ -137,4 +137,25 @@ export class UserService {
         });
     }
 
+    /**
+     * @returns void
+     * @throws ApiError
+     */
+    public static toggleDisabled({
+        userId,
+    }: {
+        userId: number,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/users/{userId}/actions/disable',
+            path: {
+                'userId': userId,
+            },
+            errors: {
+                404: `Not Found`,
+            },
+        });
+    }
+
 }

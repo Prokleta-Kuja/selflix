@@ -12,6 +12,17 @@ const parseId = (route: RouteLocationNormalized) => {
 const router = createRouter({
   linkActiveClass: 'active',
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: (to, from, savedPosition) => {
+    if (savedPosition) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(savedPosition)
+        }, 250)
+      })
+    } else {
+      return { top: 0 }
+    }
+  },
   routes: [
     {
       path: '/',
@@ -26,7 +37,7 @@ const router = createRouter({
     {
       path: '/sign-out',
       name: 'sign-out',
-      component: () => import('../views/SignInView.vue')
+      component: () => import('../views/SignOutView.vue')
     },
     {
       path: '/users',
@@ -41,22 +52,22 @@ const router = createRouter({
     {
       path: '/libs',
       name: 'libs',
-      component: () => import('../views/SignInView.vue')
+      component: () => import('../views/HomeView.vue')
     },
     {
       path: '/libs/:id(\\d+)',
       name: 'lib',
       props: parseId,
-      component: () => import('../views/SignInView.vue')
+      component: () => import('../views/HomeView.vue')
     },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: HomeView } // NotFound
   ]
 })
 
-const publicPages = ['/sign-in', '/sign-out']
+const publicPages = new Set<string>(['/sign-in', '/sign-out'])
 router.beforeEach(async (to) => {
   const auth = useAuth()
-  const authRequired = !publicPages.includes(to.path)
+  const authRequired = !publicPages.has(to.path)
 
   // Must wait for auth to intialize before making a decision
   while (!auth.initialized) await new Promise((f) => setTimeout(f, 500))

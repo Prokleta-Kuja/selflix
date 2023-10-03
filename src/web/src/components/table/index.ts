@@ -25,10 +25,17 @@ export interface ITableParams {
   sortBy?: string
 }
 
+const sizeKey = nameof<ITableParams>('size')
+const totalKey = nameof<ITableParams>('total')
+
 const minPageSize = 10,
   defaultPageSize = 25,
   maxPageSize = 100
 export const defaultPageSizes = [minPageSize, defaultPageSize, 50, maxPageSize]
+
+export const getQueryKey = (key: string, prefix?: string) => (prefix ? `${prefix}.${key}` : key)
+export const getParamsKey = (queryKey: string, prefix?: string) =>
+  prefix ? queryKey.replace(`${prefix}.`, '') : queryKey
 
 export const initParams = (query?: LocationQuery, prefix?: string): ITableParams => {
   const params: ITableParams = { page: 1, size: 25, total: 0, ascending: false }
@@ -36,27 +43,26 @@ export const initParams = (query?: LocationQuery, prefix?: string): ITableParams
     const indexableParams = params as { [key: string]: any }
     const trimPrefix = prefix ? `${prefix}.` : ''
 
-    Object.keys(query).forEach((prefixedKey) => {
-      if (!prefixedKey.startsWith(trimPrefix)) return
+    Object.keys(query).forEach((queryKey) => {
+      if (!queryKey.startsWith(trimPrefix)) return
 
-      const key = trimPrefix ? prefixedKey.replace(trimPrefix, '') : prefixedKey
+      const key = getParamsKey(queryKey, prefix)
 
-      if (query[prefixedKey] == null) {
+      if (query[queryKey] == null) {
         indexableParams[key] = true
         return
       }
-      let val = parseInt(query[prefixedKey]!.toString())
-      if (isNaN(val)) val = parseFloat(query[prefixedKey]!.toString())
+      let val = parseInt(query[queryKey]!.toString())
+      if (isNaN(val)) val = parseFloat(query[queryKey]!.toString())
       if (!isNaN(val)) {
         indexableParams[key] = val
         return
       }
 
-      indexableParams[key] = query[prefixedKey]!.toString()
+      indexableParams[key] = query[queryKey]!.toString()
     })
   }
 
-  const sizeKey = nameof<ITableParams>('size')
   if (sizeKey in params) {
     const indexableParams = params as { [key: string]: any }
     const val = parseInt(indexableParams[sizeKey])
@@ -74,17 +80,17 @@ export const getQuery = (params: ITableParams, prefix?: string): LocationQuery =
   const query: { [key: string]: string | null } = {}
   const indexableParams = params as { [key: string]: any }
   Object.keys(params).forEach((key) => {
-    if (key === nameof<ITableParams>('total')) return
+    if (key === totalKey) return
 
-    const prefixedKey = prefix ? `${prefix}.${key}` : key
+    const queryKey = getQueryKey(key, prefix)
     const type = typeof indexableParams[key]
     if (type === 'boolean')
       if (indexableParams[key]) {
-        query[prefixedKey] = null
+        query[queryKey] = null
         return
       } else return
 
-    query[prefixedKey] = indexableParams[key]
+    query[queryKey] = indexableParams[key]
   })
 
   return query

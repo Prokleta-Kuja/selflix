@@ -154,6 +154,24 @@ public class UsersController : ControllerBase
         return Ok(new UserVM(user));
     }
 
+    [HttpPatch("{userId}/actions/disable", Name = "ToggleDisabled")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleDisableAsync(int userId)
+    {
+        var user = await _db.Users
+          .Where(u => u.UserId == userId)
+          .FirstOrDefaultAsync();
+
+        if (user == null)
+            return NotFound(new PlainError("Not found"));
+
+        user.Disabled = user.Disabled.HasValue ? null : DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     [HttpDelete("{userId}", Name = "DeleteUser")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

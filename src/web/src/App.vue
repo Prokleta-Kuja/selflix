@@ -2,7 +2,7 @@
 import { RouterLink, RouterView } from 'vue-router'
 import TotpIndicator from '@/components/TotpIndicator.vue';
 import { useAuth } from '@/stores/auth';
-import BoxArrowRight from '@/components/icons/BoxArrowRight.vue'
+import BoxArrowRightIcon from '@/components/icons/BoxArrowRightIcon.vue'
 import CalendarRangeFillIcon from '@/components/icons/CalendarRangeFillIcon.vue'
 import ThreeDotsVerticalIcon from '@/components/icons/ThreeDotsVerticalIcon.vue'
 
@@ -68,7 +68,7 @@ auth.initialize()
                 title="Sign out">
                 <RouterLink class="nav-link py-2 px-0 px-lg-2" :to="{ name: 'sign-out' }">
                   <span class="me-2">{{ auth.username }}</span>
-                  <BoxArrowRight />
+                  <BoxArrowRightIcon />
                   <small class="d-lg-none ms-2">Sign out</small>
                 </RouterLink>
               </li>
@@ -78,7 +78,11 @@ auth.initialize()
       </nav>
     </header>
     <div class="container mt-4">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <Transition name="fade">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
     </div>
   </template>
   <template v-else>

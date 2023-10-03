@@ -4,8 +4,9 @@ import Search from '@/components/form/SearchBox.vue'
 import { Header, Pages, Sizes, type ITableParams, initParams, getQuery, updateParams } from "@/components/table"
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
 import { UserService, type UserLM } from "@/api";
-import XLg from '@/components/icons/XLg.vue'
-import CheckLg from '@/components/icons/CheckLg.vue'
+import XLgIcon from '@/components/icons/XLgIcon.vue'
+import CheckLgIcon from '@/components/icons/CheckLgIcon.vue'
+import TrashIcon from '@/components/icons/TrashIcon.vue'
 import { useRoute, useRouter } from "vue-router";
 
 interface IUserParams extends ITableParams {
@@ -19,13 +20,13 @@ const refresh = (params?: ITableParams) => {
     if (params)
         data.params = params;
 
-    const query = { ...getQuery, ...getQuery(data.params, props.queryPrefix) }
-    router.push({ query });
+    const query = { ...route.query, ...getQuery(data.params, props.queryPrefix) }
+    router.replace({ query });
+
     UserService.getUsers({ ...data.params })
         .then(r => {
             data.items = r.items;
             updateParams(data.params, r)
-            scrollTo(0, 0)
         });
 };
 const showDelete = (item: UserLM) => data.delete = item;
@@ -40,6 +41,15 @@ const deleteItem = () => {
             hideDelete();
         })
         .catch(() => {/* TODO: show error */ })
+}
+const disableItem = (item: UserLM) => {
+    UserService.toggleDisabled({ userId: item.id })
+        .then(() => refresh())
+        .catch(() => {/* TODO: show error */ })
+}
+const resetPageNumber = () => {
+    data.params.page = 1
+    refresh()
 }
 
 watch(() => props.lastChange, () => refresh());
@@ -57,7 +67,7 @@ refresh();
     <div class="d-flex flex-wrap">
         <Sizes class="me-3 mb-2" style="max-width:8rem" :params="data.params" :on-change="refresh" />
         <Search autoFocus class="me-3 mb-2" style="max-width:16rem" placeholder="User name" v-model="data.params.searchTerm"
-            :on-change="refresh" />
+            :on-change="resetPageNumber" />
     </div>
     <div class="table-responsive">
         <table class="table table-sm">
@@ -76,14 +86,21 @@ refresh();
                         </RouterLink>
                     </td>
                     <td>
-                        <CheckLg v-if="item.isAdmin" class="text-success" />
-                        <XLg v-else class="text-danger" />
+                        <CheckLgIcon v-if="item.isAdmin" class="text-success" />
+                        <XLgIcon v-else class="text-danger" />
                     </td>
                     <td>{{ disabledText(item.disabled) }}</td>
                     <td class="text-end p-1">
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-danger" title="Delete" @click="showDelete(item)">
-                                <XLg />
+                            <button class="btn btn-sm btn-outline-danger" title="Delete" @click="showDelete(item)">
+                                <TrashIcon />
+                            </button>
+                            <button v-if="item.disabled" class="btn btn-sm btn-success" title="Enable"
+                                @click="disableItem(item)">
+                                <CheckLgIcon />
+                            </button>
+                            <button v-else class="btn btn-sm btn-danger" title="Disable" @click="disableItem(item)">
+                                <XLgIcon />
                             </button>
                         </div>
                     </td>
