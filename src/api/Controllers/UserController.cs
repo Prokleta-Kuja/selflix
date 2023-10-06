@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using selflix.Db;
@@ -6,6 +7,7 @@ using selflix.Services;
 
 namespace selflix.Controllers;
 
+[Authorize(Roles = C.ADMIN_ROLE)]
 [ApiController]
 [Route("api/users")]
 [Tags(nameof(Db.User))]
@@ -191,11 +193,7 @@ public class UsersController : ControllerBase
     }
 }
 
-public class UserQuery : FilterQuery
-{
-    public int? AddressId { get; set; }
-    public int? NotAddressId { get; set; }
-}
+public class UserQuery : FilterQuery { }
 
 public enum UsersSortBy
 {

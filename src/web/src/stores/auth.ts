@@ -7,6 +7,7 @@ export const useAuth = defineStore('auth', () => {
   const router = useRouter()
   const initialized = ref(false)
   const isAuthenticated = ref(false)
+  const isAdmin = ref(false)
   const hasOtp = ref(false)
   const username = ref<string | undefined | null>(undefined)
 
@@ -14,6 +15,7 @@ export const useAuth = defineStore('auth', () => {
     isAuthenticated.value = info.authenticated
     hasOtp.value = info.hasOtp
     username.value = info.username
+    isAdmin.value = Boolean(info.isAdmin)
     setExpire(info.expires)
   }
 
@@ -21,6 +23,7 @@ export const useAuth = defineStore('auth', () => {
     isAuthenticated.value = false
     hasOtp.value = false
     username.value = ''
+    isAdmin.value = false
   }
 
   const initialize = () =>
@@ -29,6 +32,7 @@ export const useAuth = defineStore('auth', () => {
         isAuthenticated.value = r.authenticated
         hasOtp.value = r.hasOtp
         username.value = r.username
+        isAdmin.value = Boolean(r.isAdmin)
         setExpire(r.expires)
       })
       .finally(() => (initialized.value = true))
@@ -46,6 +50,7 @@ export const useAuth = defineStore('auth', () => {
 
   return {
     isAuthenticated,
+    isAdmin,
     hasOtp,
     username,
     initialized,

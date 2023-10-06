@@ -22,6 +22,7 @@ public class AuthController : ControllerBase
 {
     const string OTP_CLAIM = "OTP";
     const string GENERIC_ERROR_MESSAGE = "Invalid username, password and/or one time code";
+    const string GENERIC_DEVICE_ERROR_MESSAGE = "Invalid DeviceId and/or one time code";
     readonly ILogger<AuthController> _logger;
     readonly AppDbContext _db;
     readonly IDataProtectionProvider _dpProvider;
@@ -139,9 +140,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> LoginAsync(LoginModel model)
     {
         model.Username = model.Username.ToLower();
-        var user = await _db.Users
-            .AsNoTracking()
-            .SingleOrDefaultAsync(u => u.Name == model.Username && u.Disabled == null);
+        var user = await _db.Users.SingleOrDefaultAsync(u => u.Name == model.Username && u.Disabled == null);
 
         if (user == null)
             return BadRequest(new PlainError(GENERIC_ERROR_MESSAGE));
@@ -179,7 +178,7 @@ public class AuthController : ControllerBase
         var authProperties = new AuthenticationProperties { AllowRefresh = false, ExpiresUtc = expires, IsPersistent = true };
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        return Ok(new AuthStatusModel { Authenticated = true, HasOtp = hasOtp, Username = user.Name, Expires = expires });
+        return Ok(new AuthStatusModel { Authenticated = true, HasOtp = hasOtp, Username = user.Name, IsAdmin = user.IsAdmin, Expires = expires });
     }
 
     [HttpDelete(Name = "Logout")]
@@ -190,5 +189,42 @@ public class AuthController : ControllerBase
         if (HttpContext.User.Identity?.IsAuthenticated ?? false)
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return NoContent();
+    }
+
+    [HttpPost(Name = "DeviceLogin")]
+    [ProducesResponseType(typeof(AuthStatusModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeviceLoginAsync(DeviceLoginModel model)
+    {
+        model.DeviceId = model.DeviceId.ToUpper();
+        var userDevice = await _db.UserDevices
+        .Include(ud => ud.User)
+        .SingleOrDefaultAsync(ud => ud.DeviceId == model.DeviceId);
+
+        if (userDevice == null || userDevice.OtpKey == null)
+            return BadRequest(new PlainError(GENERIC_DEVICE_ERROR_MESSAGE));
+
+        var protector = _dpProvider.CreateProtector(nameof(userDevice.OtpKey));
+        var key = protector.Unprotect(userDevice.OtpKey!);
+        if (model.IsInvalid(key, out var errorModel))
+            return BadRequest(errorModel);
+
+        userDevice.LastLogin = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var expires = DateTime.UtcNow.AddHours(3);
+        var claims = new List<Claim> {
+            // TODO: add claim to differentiate user vs device
+            new(ClaimTypes.Name, userDevice.User!.Name),
+            new(ClaimTypes.Sid, userDevice.UserDeviceId.ToString()),
+            new(ClaimTypes.Expiration, expires.ToBinary().ToString())
+        };
+
+        //TODO: figure out, cookie or jwt?
+        // var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        // var authProperties = new AuthenticationProperties { AllowRefresh = false, ExpiresUtc = expires, IsPersistent = true };
+        // await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+        return Ok(new AuthStatusModel { Authenticated = true, HasOtp = true, Username = userDevice.User.Name, IsAdmin = userDevice.User.IsAdmin, Expires = expires });
     }
 }

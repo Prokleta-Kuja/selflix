@@ -7,7 +7,6 @@ import CalendarRangeFillIcon from '@/components/icons/CalendarRangeFillIcon.vue'
 import ThreeDotsVerticalIcon from '@/components/icons/ThreeDotsVerticalIcon.vue'
 
 const auth = useAuth()
-auth.initialize()
 </script>
 
 <template>
@@ -41,16 +40,19 @@ auth.initialize()
           <div class="offcanvas-body p-4 pt-0 p-lg-0">
             <hr class="d-lg-none text-white-50">
             <ul class="navbar-nav flex-row flex-wrap">
-              <li class="nav-item col-6 col-lg-auto" data-bs-target="#appNavbar" data-bs-dismiss="offcanvas">
-                <RouterLink class="nav-link py-2 px-0 px-lg-2" :to="{ name: 'users' }">Users</RouterLink>
-              </li>
-              <li class="nav-item col-6 col-lg-auto" data-bs-target="#appNavbar" data-bs-dismiss="offcanvas">
-                <RouterLink class="nav-link py-2 px-0 px-lg-2" :to="{ name: 'libs' }">Libraries</RouterLink>
-              </li>
+              <template v-if="auth.isAdmin">
+                <li class="nav-item col-6 col-lg-auto" data-bs-target="#appNavbar" data-bs-dismiss="offcanvas">
+                  <RouterLink class="nav-link py-2 px-0 px-lg-2" :to="{ name: 'users' }">Users</RouterLink>
+                </li>
+                <li class="nav-item col-6 col-lg-auto" data-bs-target="#appNavbar" data-bs-dismiss="offcanvas">
+                  <RouterLink class="nav-link py-2 px-0 px-lg-2" :to="{ name: 'libs' }">Libraries</RouterLink>
+                </li>
+              </template>
             </ul>
             <hr class="d-lg-none text-white-50">
             <ul class="navbar-nav flex-row flex-wrap ms-md-auto">
-              <li class="nav-item col-6 col-lg-auto" data-bs-target="#appNavbar" data-bs-dismiss="offcanvas">
+              <li v-if="auth.isAdmin" class="nav-item col-6 col-lg-auto" data-bs-target="#appNavbar"
+                data-bs-dismiss="offcanvas">
                 <a class="nav-link py-2 px-0 px-lg-2" href="/jobs" title="Jobs">
                   <CalendarRangeFillIcon />
                   <small class="d-lg-none ms-2">Jobs</small>

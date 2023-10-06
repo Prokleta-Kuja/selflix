@@ -45,9 +45,15 @@ const router = createRouter({
       component: () => import('../views/UserView.vue')
     },
     {
-      path: '/users/:id(\\d+)',
-      name: 'user',
-      component: () => import('../views/UserView.vue')
+      path: '/devices',
+      name: 'devices',
+      component: () => import('../views/DevicesView.vue')
+    },
+    {
+      path: '/users/:id(\\d+)/devices',
+      name: 'user-devices',
+      props: parseId,
+      component: () => import('../views/DevicesView.vue')
     },
     {
       path: '/libs',

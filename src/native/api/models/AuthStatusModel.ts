@@ -7,6 +7,7 @@ export type AuthStatusModel = {
     authenticated: boolean;
     hasOtp: boolean;
     username?: string | null;
+    isAdmin?: boolean | null;
     expires?: string | null;
 };
 
