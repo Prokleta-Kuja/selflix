@@ -40,20 +40,15 @@ const router = createRouter({
       component: () => import('../views/SignOutView.vue')
     },
     {
-      path: '/users',
-      name: 'users',
-      component: () => import('../views/UserView.vue')
-    },
-    {
-      path: '/devices',
-      name: 'devices',
-      component: () => import('../views/DevicesView.vue')
-    },
-    {
       path: '/users/:id(\\d+)/devices',
       name: 'user-devices',
       props: parseId,
-      component: () => import('../views/DevicesView.vue')
+      component: HomeView
+    },
+    {
+      path: '/users',
+      name: 'users',
+      component: () => import('../views/UserView.vue')
     },
     {
       path: '/libs',
@@ -66,7 +61,11 @@ const router = createRouter({
       props: parseId,
       component: () => import('../views/HomeView.vue')
     },
-    { path: '/:pathMatch(.*)*', name: 'NotFound', component: HomeView } // NotFound
+    {
+      path: '/:pathMatch(.*)*',
+      name: '404',
+      component: () => import('../views/NotFoundView.vue')
+    }
   ]
 })
 
@@ -76,7 +75,11 @@ router.beforeEach(async (to) => {
   const authRequired = !publicPages.has(to.path)
 
   // Must wait for auth to intialize before making a decision
-  while (!auth.initialized) await new Promise((f) => setTimeout(f, 500))
+  while (!auth.initialized)
+    await new Promise((f) => {
+      auth.initialize()
+      setTimeout(f, 500)
+    })
 
   if (!auth.isAuthenticated && authRequired) return { name: 'sign-in' }
 })

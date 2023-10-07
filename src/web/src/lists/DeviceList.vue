@@ -3,20 +3,18 @@ import { reactive, watch } from "vue";
 import Search from '@/components/form/SearchBox.vue'
 import { Header, Pages, Sizes, type ITableParams, initParams, getQuery, updateParams } from "@/components/table"
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
-import { UserService, type UserLM } from "@/api";
-import XLgIcon from '@/components/icons/XLgIcon.vue'
-import CheckLgIcon from '@/components/icons/CheckLgIcon.vue'
+import { UserDeviceService, type UserDeviceLM } from "@/api";
 import TrashIcon from '@/components/icons/TrashIcon.vue'
 import { useRoute, useRouter } from "vue-router";
 import { dateText } from "@/tools";
 
-interface IUserParams extends ITableParams {
+interface IUserDeviceParams extends ITableParams {
     searchTerm?: string;
 }
 const route = useRoute()
 const router = useRouter()
-const props = defineProps<{ lastChange?: Date, queryPrefix?: string }>()
-const data = reactive<{ params: IUserParams, items: UserLM[], delete?: UserLM }>({ params: initParams(route.query, props.queryPrefix), items: [] });
+const props = defineProps<{ lastChange?: Date, queryPrefix?: string, userId?: number }>()
+const data = reactive<{ params: IUserDeviceParams, items: UserDeviceLM[], delete?: UserDeviceLM }>({ params: initParams(route.query, props.queryPrefix), items: [] });
 const refresh = (params?: ITableParams) => {
     if (params)
         data.params = params;
@@ -24,28 +22,23 @@ const refresh = (params?: ITableParams) => {
     const query = { ...route.query, ...getQuery(data.params, props.queryPrefix) }
     router.replace({ query });
 
-    UserService.getUsers({ ...data.params })
+    UserDeviceService.getAllDevices({ ...data.params, userId: props.userId })
         .then(r => {
             data.items = r.items;
             updateParams(data.params, r)
         });
 };
-const showDelete = (item: UserLM) => data.delete = item;
+const showDelete = (item: UserDeviceLM) => data.delete = item;
 const hideDelete = () => data.delete = undefined;
 const deleteItem = () => {
     if (!data.delete)
         return;
 
-    UserService.deleteUser({ userId: data.delete.id })
+    UserDeviceService.deleteUserDevice({ userDeviceId: data.delete.id })
         .then(() => {
             refresh();
             hideDelete();
         })
-        .catch(() => {/* TODO: show error */ })
-}
-const disableItem = (item: UserLM) => {
-    UserService.toggleDisabled({ userId: item.id })
-        .then(() => refresh())
         .catch(() => {/* TODO: show error */ })
 }
 const resetPageNumber = () => {
@@ -54,6 +47,7 @@ const resetPageNumber = () => {
 }
 
 watch(() => props.lastChange, () => refresh());
+watch(() => props.userId, () => refresh());
 
 refresh();
 </script>
@@ -68,33 +62,28 @@ refresh();
             <thead>
                 <tr>
                     <Header :params="data.params" :on-sort="refresh" column="name" />
-                    <Header :params="data.params" :on-sort="refresh" column="isAdmin" display="Admin" />
-                    <Header :params="data.params" :on-sort="refresh" column="disabled" display="Disabled" />
+                    <Header :params="data.params" :on-sort="refresh" column="brand" />
+                    <Header :params="data.params" :on-sort="refresh" column="model" />
+                    <Header :params="data.params" :on-sort="refresh" column="os" />
+                    <Header :params="data.params" :on-sort="refresh" column="created" />
+                    <Header :params="data.params" :on-sort="refresh" column="lastLogin" display="Last login" />
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="item in data.items" :key="item.id" class="align-middle">
                     <td>
-                        <RouterLink :to="{ name: 'user-devices', params: { id: item.id } }">{{ item.name }}
-                        </RouterLink>
+                        {{ item.name }}
                     </td>
-                    <td>
-                        <CheckLgIcon v-if="item.isAdmin" class="text-success" />
-                        <XLgIcon v-else class="text-danger" />
-                    </td>
-                    <td>{{ dateText(item.disabled) }}</td>
+                    <td>{{ item.brand }}</td>
+                    <td>{{ item.model }}</td>
+                    <td>{{ item.os }}</td>
+                    <td>{{ dateText(item.created) }}</td>
+                    <td>{{ dateText(item.lastLogin) }}</td>
                     <td class="text-end p-1">
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm btn-outline-danger" title="Delete" @click="showDelete(item)">
                                 <TrashIcon />
-                            </button>
-                            <button v-if="item.disabled" class="btn btn-sm btn-success" title="Enable"
-                                @click="disableItem(item)">
-                                <CheckLgIcon />
-                            </button>
-                            <button v-else class="btn btn-sm btn-danger" title="Disable" @click="disableItem(item)">
-                                <XLgIcon />
                             </button>
                         </div>
                     </td>
@@ -103,7 +92,7 @@ refresh();
         </table>
     </div>
     <Pages class="mb-2" :params="data.params" :on-change="refresh" />
-    <ConfirmationModal v-if="data.delete" title="User deletion" :onClose="hideDelete" :onConfirm="deleteItem" shown>
+    <ConfirmationModal v-if="data.delete" title="User device deletion" :onClose="hideDelete" :onConfirm="deleteItem" shown>
         Are you sure you want to permanently delete <b>{{ data.delete.name }}</b>?
     </ConfirmationModal>
 </template>

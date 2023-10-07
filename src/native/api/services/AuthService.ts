@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { AuthStatusModel } from '../models/AuthStatusModel';
+import type { DeviceLoginModel } from '../models/DeviceLoginModel';
 import type { LoginModel } from '../models/LoginModel';
 import type { TotpCM } from '../models/TotpCM';
 import type { TotpVM } from '../models/TotpVM';
@@ -97,6 +98,26 @@ export class AuthService {
             url: '/api/auth/totp',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+
+    /**
+     * @returns AuthStatusModel Success
+     * @throws ApiError
+     */
+    public static deviceLogin({
+        requestBody,
+    }: {
+        requestBody?: DeviceLoginModel,
+    }): CancelablePromise<AuthStatusModel> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/auth/device',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Bad Request`,
+            },
         });
     }
 

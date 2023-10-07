@@ -2,38 +2,41 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { UserCM } from '../models/UserCM';
-import type { UserLMListResponse } from '../models/UserLMListResponse';
-import type { UserUM } from '../models/UserUM';
-import type { UserVM } from '../models/UserVM';
+import type { UserDeviceCM } from '../models/UserDeviceCM';
+import type { UserDeviceLMListResponse } from '../models/UserDeviceLMListResponse';
+import type { UserDeviceUM } from '../models/UserDeviceUM';
+import type { UserDeviceVM } from '../models/UserDeviceVM';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 
-export class UserService {
+export class UserDeviceService {
 
     /**
-     * @returns UserLMListResponse Success
+     * @returns UserDeviceLMListResponse Success
      * @throws ApiError
      */
-    public static getUsers({
+    public static getAllDevices({
+        userId,
         size,
         page,
         ascending,
         sortBy,
         searchTerm,
     }: {
+        userId?: number,
         size?: number,
         page?: number,
         ascending?: boolean,
         sortBy?: string,
         searchTerm?: string,
-    }): CancelablePromise<UserLMListResponse> {
+    }): CancelablePromise<UserDeviceLMListResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/users',
+            url: '/api/devices',
             query: {
+                'userId': userId,
                 'size': size,
                 'page': page,
                 'ascending': ascending,
@@ -44,17 +47,17 @@ export class UserService {
     }
 
     /**
-     * @returns UserVM Success
+     * @returns UserDeviceVM Success
      * @throws ApiError
      */
-    public static createUser({
+    public static createUserDevice({
         requestBody,
     }: {
-        requestBody?: UserCM,
-    }): CancelablePromise<UserVM> {
+        requestBody?: UserDeviceCM,
+    }): CancelablePromise<UserDeviceVM> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/users',
+            url: '/api/devices',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -64,42 +67,21 @@ export class UserService {
     }
 
     /**
-     * @returns UserVM Success
+     * @returns UserDeviceVM Success
      * @throws ApiError
      */
-    public static getUser({
-        userId,
-    }: {
-        userId: number,
-    }): CancelablePromise<UserVM> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/users/{userId}',
-            path: {
-                'userId': userId,
-            },
-            errors: {
-                404: `Not Found`,
-            },
-        });
-    }
-
-    /**
-     * @returns UserVM Success
-     * @throws ApiError
-     */
-    public static updateUser({
-        userId,
+    public static updateUserDevice({
+        userDeviceId,
         requestBody,
     }: {
-        userId: number,
-        requestBody?: UserUM,
-    }): CancelablePromise<UserVM> {
+        userDeviceId: number,
+        requestBody?: UserDeviceUM,
+    }): CancelablePromise<UserDeviceVM> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/users/{userId}',
+            url: '/api/devices/{userDeviceId}',
             path: {
-                'userId': userId,
+                'userDeviceId': userDeviceId,
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -114,16 +96,16 @@ export class UserService {
      * @returns void
      * @throws ApiError
      */
-    public static deleteUser({
-        userId,
+    public static deleteUserDevice({
+        userDeviceId,
     }: {
-        userId: number,
+        userDeviceId: number,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/users/{userId}',
+            url: '/api/devices/{userDeviceId}',
             path: {
-                'userId': userId,
+                'userDeviceId': userDeviceId,
             },
             errors: {
                 404: `Not Found`,
@@ -132,19 +114,19 @@ export class UserService {
     }
 
     /**
-     * @returns void
+     * @returns any Success
      * @throws ApiError
      */
-    public static toggleDisabled({
-        userId,
+    public static registerDevice({
+        deviceId,
     }: {
-        userId: number,
-    }): CancelablePromise<void> {
+        deviceId: string,
+    }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/users/{userId}/actions/disable',
+            url: '/api/devices/{deviceId}/actions/register',
             path: {
-                'userId': userId,
+                'deviceId': deviceId,
             },
             errors: {
                 404: `Not Found`,

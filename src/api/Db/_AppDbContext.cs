@@ -146,12 +146,11 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         var dos = new Watcher("Dos");
         usrUser.Watchers.Add(uno); usrUser.Watchers.Add(dos);
 
-        var tv = new UserDevice("guid or something")
+        var tv = new UserDevice(usrUser.UserId, "guid or something", "Living room TV")
         {
             Brand = "Google",
             Model = "Chromecast HD",
             OS = "Android 11",
-            UserId = usrUser.UserId,
         };
         UserDevices.Add(tv);
         await SaveChangesAsync();

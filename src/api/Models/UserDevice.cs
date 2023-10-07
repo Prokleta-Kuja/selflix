@@ -7,7 +7,7 @@ public class UserDeviceVM
 {
     public UserDeviceVM(UserDevice ud)
     {
-        UserDeviceId = ud.UserDeviceId;
+        Id = ud.UserDeviceId;
         Name = ud.Name;
         Brand = ud.Brand;
         Model = ud.Model;
@@ -16,7 +16,7 @@ public class UserDeviceVM
         LastLogin = ud.LastLogin;
     }
 
-    [Required] public int UserDeviceId { get; set; }
+    [Required] public int Id { get; set; }
     [Required] public string Name { get; set; }
     public string? Brand { get; set; }
     public string? Model { get; set; }
@@ -27,7 +27,7 @@ public class UserDeviceVM
 
 public class UserDeviceLM
 {
-    [Required] public int UserDeviceId { get; set; }
+    [Required] public int Id { get; set; }
     [Required] public required string Name { get; set; }
     public string? Brand { get; set; }
     public string? Model { get; set; }

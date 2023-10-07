@@ -18,16 +18,12 @@ export class UserService {
      * @throws ApiError
      */
     public static getUsers({
-        addressId,
-        notAddressId,
         size,
         page,
         ascending,
         sortBy,
         searchTerm,
     }: {
-        addressId?: number,
-        notAddressId?: number,
         size?: number,
         page?: number,
         ascending?: boolean,
@@ -38,8 +34,6 @@ export class UserService {
             method: 'GET',
             url: '/api/users',
             query: {
-                'addressId': addressId,
-                'notAddressId': notAddressId,
                 'size': size,
                 'page': page,
                 'ascending': ascending,

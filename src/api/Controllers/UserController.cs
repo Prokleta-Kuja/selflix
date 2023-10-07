@@ -101,6 +101,7 @@ public class UsersController : ControllerBase
         if (!string.IsNullOrWhiteSpace(hibpResult))
             return BadRequest(new ValidationError(nameof(model.Password), hibpResult));
 
+        // TODO: validate complexity
         var hash = _hasher.HashPassword(model.Password);
         var user = new User(model.Name, hash, model.IsAdmin);
 
@@ -140,6 +141,7 @@ public class UsersController : ControllerBase
         user.IsAdmin = model.IsAdmin;
         if (!string.IsNullOrWhiteSpace(model.NewPassword))
         {
+            // TODO: validate complexity
             var hibpResult = await _hibp.CheckAsync(model.NewPassword);
             if (!string.IsNullOrWhiteSpace(hibpResult))
                 return BadRequest(new ValidationError(nameof(model.NewPassword), hibpResult));

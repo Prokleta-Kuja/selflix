@@ -25,7 +25,7 @@ public class DevicesController : ControllerBase
         _dpProvider = dpProvider;
     }
 
-    [HttpGet(Name = "GetAllMyDevices")]
+    [HttpGet(Name = "GetAllDevices")]
     [ProducesResponseType(typeof(ListResponse<UserDeviceLM>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync([FromQuery] UserDeviceQuery req)
     {
@@ -35,7 +35,10 @@ public class DevicesController : ControllerBase
         if (sidClaim == null || !int.TryParse(sidClaim, out var userId))
             return BadRequest(new PlainError("Could not determine userid"));
 
-        query = query.Where(ud => ud.UserId == userId);
+        if (req.UserId.HasValue && User.FindFirstValue(ClaimTypes.Role) == C.ADMIN_ROLE)
+            query = query.Where(ud => ud.UserId == req.UserId.Value);
+        else
+            query = query.Where(ud => ud.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(req.SearchTerm))
             query = query.Where(ud => EF.Functions.Like(ud.Name, $"%{req.SearchTerm}%")
@@ -61,7 +64,7 @@ public class DevicesController : ControllerBase
             .Paginate(req)
             .Select(ud => new UserDeviceLM
             {
-                UserDeviceId = ud.UserDeviceId,
+                Id = ud.UserDeviceId,
                 Name = ud.Name,
                 Brand = ud.Brand,
                 Model = ud.Model,
@@ -137,7 +140,11 @@ public class DevicesController : ControllerBase
         if (sidClaim == null || !int.TryParse(sidClaim, out var userId))
             return BadRequest(new PlainError("Could not determine userid"));
 
-        var userDevice = await _db.UserDevices.SingleOrDefaultAsync(ud => ud.UserId == userId && ud.UserDeviceId == userDeviceId);
+        var query = _db.UserDevices.AsQueryable();
+        if (User.FindFirstValue(ClaimTypes.Role) != C.ADMIN_ROLE)
+            query = query.Where(ud => ud.UserId == userId);
+
+        var userDevice = await query.SingleOrDefaultAsync(ud => ud.UserDeviceId == userDeviceId);
         if (userDevice == null)
             return NotFound(new PlainError("Not found"));
 
@@ -170,7 +177,10 @@ public class DevicesController : ControllerBase
     }
 }
 
-public class UserDeviceQuery : FilterQuery { }
+public class UserDeviceQuery : FilterQuery
+{
+    public int? UserId { get; set; }
+}
 
 public enum UserDevicesSortBy
 {

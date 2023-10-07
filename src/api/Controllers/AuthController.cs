@@ -43,6 +43,7 @@ public class AuthController : ControllerBase
         if (User.Identity?.IsAuthenticated ?? false)
         {
             var hasOtp = User.HasClaim(c => c.Type == OTP_CLAIM);
+            var isAdmin = User.FindFirstValue(ClaimTypes.Role) == C.ADMIN_ROLE;
             var expires = DateTime.MinValue;
             var expiresStr = User.FindFirst(ClaimTypes.Expiration)?.Value;
             if (!string.IsNullOrWhiteSpace(expiresStr) && long.TryParse(expiresStr, out var expiresVal))
@@ -51,6 +52,7 @@ public class AuthController : ControllerBase
             return Ok(new AuthStatusModel
             {
                 Authenticated = true,
+                IsAdmin = isAdmin,
                 HasOtp = hasOtp,
                 Username = User.Identity!.Name,
                 Expires = expires
@@ -191,7 +193,7 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost(Name = "DeviceLogin")]
+    [HttpPost("device", Name = "DeviceLogin")]
     [ProducesResponseType(typeof(AuthStatusModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeviceLoginAsync(DeviceLoginModel model)
