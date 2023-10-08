@@ -9,6 +9,7 @@ using selflix.Models;
 using selflix.Services;
 using selflix.Db;
 using selflix.Auth;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace selflix.Controllers;
 
@@ -184,6 +185,10 @@ public class AuthController : AppController
             Token = tokenProtector.Protect(authToken.AuthTokenId.ToString()),
         };
 
+        var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+        var cacheKey = AppAuthenticationHandler.AuthenticationCacheKey(cacheToken.AuthTokenId);
+        cache.Set(cacheKey, cacheToken);
+
         return Ok(response);
     }
 
@@ -244,6 +249,10 @@ public class AuthController : AppController
             Expires = expires,
             Token = tokenProtector.Protect(authToken.AuthTokenId.ToString()),
         };
+
+        var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+        var cacheKey = AppAuthenticationHandler.AuthenticationCacheKey(cacheToken.AuthTokenId);
+        cache.Set(cacheKey, cacheToken);
 
         return Ok(response);
     }

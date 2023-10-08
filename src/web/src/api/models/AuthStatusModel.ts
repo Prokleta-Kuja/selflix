@@ -9,5 +9,6 @@ export type AuthStatusModel = {
     username?: string | null;
     isAdmin?: boolean | null;
     expires?: string | null;
+    token?: string | null;
 };
 

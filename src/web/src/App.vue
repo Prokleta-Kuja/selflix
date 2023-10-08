@@ -32,7 +32,7 @@ const auth = useAuth()
         <div class="offcanvas-lg offcanvas-end flex-grow-1" tabindex="-1" id="appNavbar"
           aria-labelledby="appNavbarOffcanvasLabel" data-bs-scroll="true">
           <div class="offcanvas-header px-4 pb-0">
-            <h5 class="offcanvas-title text-white" id="appNavbarOffcanvasLabel">poshtar</h5>
+            <h5 class="offcanvas-title text-white" id="appNavbarOffcanvasLabel">selflix</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"
               data-bs-target="#appNavbar"></button>
           </div>

@@ -3,10 +3,11 @@ import { reactive, watch } from "vue";
 import Search from '@/components/form/SearchBox.vue'
 import { Header, Pages, Sizes, type ITableParams, initParams, getQuery, updateParams } from "@/components/table"
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
-import { UserDeviceService, type UserDeviceLM } from "@/api";
+import { UserDeviceService, type UserDeviceLM, type UserDeviceVM } from "@/api";
 import TrashIcon from '@/components/icons/TrashIcon.vue'
 import { useRoute, useRouter } from "vue-router";
 import { dateText } from "@/tools";
+import AddUserDeviceModal from "@/modals/AddUserDeviceModal.vue";
 
 interface IUserDeviceParams extends ITableParams {
     searchTerm?: string;
@@ -46,6 +47,11 @@ const resetPageNumber = () => {
     refresh()
 }
 
+const handleAdded = (item?: UserDeviceVM) => {
+    if (item)
+        data.items.unshift(item)
+}
+
 watch(() => props.lastChange, () => refresh());
 watch(() => props.userId, () => refresh());
 
@@ -54,8 +60,8 @@ refresh();
 <template>
     <div class="d-flex flex-wrap">
         <Sizes class="me-3 mb-2" style="max-width:8rem" :params="data.params" :on-change="refresh" />
-        <Search autoFocus class="me-3 mb-2" style="max-width:16rem" placeholder="User name" v-model="data.params.searchTerm"
-            :on-change="resetPageNumber" />
+        <Search autoFocus class="me-3 mb-2" style="max-width:16rem" placeholder="Device name, brand, model"
+            v-model="data.params.searchTerm" :on-change="resetPageNumber" />
     </div>
     <div class="table-responsive">
         <table class="table table-sm">
@@ -67,7 +73,9 @@ refresh();
                     <Header :params="data.params" :on-sort="refresh" column="os" />
                     <Header :params="data.params" :on-sort="refresh" column="created" />
                     <Header :params="data.params" :on-sort="refresh" column="lastLogin" display="Last login" />
-                    <th></th>
+                    <th class="text-end p-1">
+                        <AddUserDeviceModal v-if="!props.userId" @added="handleAdded" />
+                    </th>
                 </tr>
             </thead>
             <tbody>

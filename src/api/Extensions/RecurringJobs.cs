@@ -20,7 +20,7 @@ public static class RecurringJobs
         RecurringJob.AddOrUpdate<ClearAuthTokens>(
            nameof(ClearAuthTokens),
            j => j.RunAsync(CancellationToken.None),
-           "0 4 * * *",
+           "14 * * * *", // Every hour at minute 14
            defaultOpt);
 
         // activeJobIds.Add(nameof(CertReload));
