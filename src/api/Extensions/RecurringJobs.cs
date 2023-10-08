@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.Storage;
+using selflix.Jobs;
 
 namespace selflix.Extensions;
 
@@ -7,15 +8,20 @@ public static class RecurringJobs
 {
     public static void ReregisterRecurringJobs(this IApplicationBuilder app)
     {
+        var defaultOpt = new RecurringJobOptions
+        {
+            MisfireHandling = MisfireHandlingMode.Ignorable,
+            TimeZone = C.TZ,
+        };
         // Track active recurring jobs and add/update
         var activeJobIds = new HashSet<string>();
 
-        // activeJobIds.Add(nameof(CleanupTransactions));
-        // RecurringJob.AddOrUpdate<CleanupTransactions>(
-        //    nameof(CleanupTransactions),
-        //    j => j.Run(null, CancellationToken.None),
-        //    "0 4 * * *", // Every day @ 4
-        //    C.TZ);
+        activeJobIds.Add(nameof(ClearAuthTokens));
+        RecurringJob.AddOrUpdate<ClearAuthTokens>(
+           nameof(ClearAuthTokens),
+           j => j.RunAsync(CancellationToken.None),
+           "0 4 * * *",
+           defaultOpt);
 
         // activeJobIds.Add(nameof(CertReload));
         // RecurringJob.AddOrUpdate<CertReload>(
