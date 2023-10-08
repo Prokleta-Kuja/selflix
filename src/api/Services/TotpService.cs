@@ -5,9 +5,9 @@ using System.Web;
 
 namespace selflix.Services;
 
-public class AuthToken
+public class OtpToken
 {
-    public AuthToken(byte[] key, string secret, string uri)
+    public OtpToken(byte[] key, string secret, string uri)
     {
         Key = key;
         Secret = secret;
@@ -26,7 +26,7 @@ internal static class TotpService
     const int STEP_PERIOD = 30; // in seconds
     const int VALID_PREVIOUS_STEPS = -1; // -N previous steps considered valid
     const int VALID_NEXT_STEPS = 1; // N next steps considered valid
-    public static AuthToken CreateAuthToken(string label, string username, string issuer)
+    public static OtpToken CreateTotpToken(string label, string username, string issuer)
     {
         var key = GenerateRandomKey();
         var secret = Base32.ToBase32(key);

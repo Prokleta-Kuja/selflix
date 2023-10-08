@@ -167,7 +167,7 @@ public class DevicesController : ControllerBase
         if (userDevice.OtpKey != null)
             return BadRequest(new PlainError("Device was previously registered, clear existing registration to reregister"));
 
-        var token = TotpService.CreateAuthToken(nameof(selflix), userDevice.DeviceId, nameof(selflix));
+        var token = TotpService.CreateTotpToken(nameof(selflix), userDevice.DeviceId, nameof(selflix));
         var secret = Base32.FromBase32(token.Secret);
         var protector = _dpProvider.CreateProtector(nameof(userDevice.OtpKey));
         userDevice.OtpKey = protector.Protect(secret);

@@ -17,6 +17,7 @@ public class AuthStatusModel
     public string? Username { get; set; }
     public bool? IsAdmin { get; set; }
     public DateTime? Expires { get; set; }
+    public string? Token { get; set; }
 }
 
 public class TotpVM

@@ -33,6 +33,7 @@ public class User
     public DateTime? Disabled { get; set; }
     public DateTime? LastLogin { get; set; }
 
+    public virtual List<AuthToken> AuthTokens { get; set; } = new();
     public virtual List<Library> Libraries { get; set; } = new();
     public virtual List<UserDevice> Devices { get; set; } = new();
     public virtual List<Watcher> Watchers { get; set; } = new();

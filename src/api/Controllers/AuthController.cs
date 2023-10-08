@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +8,7 @@ using QRCoder;
 using selflix.Models;
 using selflix.Services;
 using selflix.Db;
+using selflix.Auth;
 
 namespace selflix.Controllers;
 
@@ -18,9 +18,8 @@ namespace selflix.Controllers;
 [Tags("Auth")]
 [Produces("application/json")]
 [ProducesErrorResponseType(typeof(PlainError))]
-public class AuthController : ControllerBase
+public class AuthController : AppController
 {
-    const string OTP_CLAIM = "OTP";
     const string GENERIC_ERROR_MESSAGE = "Invalid username, password and/or one time code";
     const string GENERIC_DEVICE_ERROR_MESSAGE = "Invalid DeviceId and/or one time code";
     readonly ILogger<AuthController> _logger;
@@ -40,26 +39,17 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(AuthStatusModel), StatusCodes.Status200OK)]
     public IActionResult Status()
     {
-        if (User.Identity?.IsAuthenticated ?? false)
-        {
-            var hasOtp = User.HasClaim(c => c.Type == OTP_CLAIM);
-            var isAdmin = User.FindFirstValue(ClaimTypes.Role) == C.ADMIN_ROLE;
-            var expires = DateTime.MinValue;
-            var expiresStr = User.FindFirst(ClaimTypes.Expiration)?.Value;
-            if (!string.IsNullOrWhiteSpace(expiresStr) && long.TryParse(expiresStr, out var expiresVal))
-                expires = DateTime.FromBinary(expiresVal);
-
+        if (TryGetAuthToken(out var token))
             return Ok(new AuthStatusModel
             {
                 Authenticated = true,
-                IsAdmin = isAdmin,
-                HasOtp = hasOtp,
-                Username = User.Identity!.Name,
-                Expires = expires
+                IsAdmin = token.IsAdmin,
+                HasOtp = token.HasOtp,
+                Username = token.UserName,
+                Expires = token.Expires,
             });
-        }
-        else
-            return Ok(new AuthStatusModel { Authenticated = false, HasOtp = false });
+
+        return Ok(new AuthStatusModel { Authenticated = false, HasOtp = false });
     }
 
     [Authorize]
@@ -67,13 +57,13 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(TotpVM), StatusCodes.Status200OK)]
     public IActionResult GetTotp()
     {
-        if (User.Identity == null || !User.Identity.IsAuthenticated || string.IsNullOrWhiteSpace(User.Identity.Name))
+        if (!TryGetAuthToken(out var token))
             return BadRequest(new PlainError("Not authenticated or no username"));
 
-        var token = TotpService.CreateAuthToken(nameof(selflix), User.Identity.Name, nameof(selflix));
-        var chunks = token.Secret.Chunk(4).Select(c => new string(c));
+        var totpToken = TotpService.CreateTotpToken(nameof(selflix), token.UserName, nameof(selflix));
+        var chunks = totpToken.Secret.Chunk(4).Select(c => new string(c));
         using var qrGenerator = new QRCodeGenerator();
-        using var qrCodeData = qrGenerator.CreateQrCode(token.Uri, QRCodeGenerator.ECCLevel.Q);
+        using var qrCodeData = qrGenerator.CreateQrCode(totpToken.Uri, QRCodeGenerator.ECCLevel.Q);
         using var qrCode = new PngByteQRCode(qrCodeData);
         var qrCodeImage = qrCode.GetGraphic(5);
 
@@ -91,6 +81,9 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> SaveTotp(TotpCM model)
     {
+        if (!TryGetAuthToken(out var token))
+            return BadRequest(new PlainError("Not authenticated or no username"));
+
         var secretArr = model.ChunkedSecret.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var secret = string.Join(string.Empty, secretArr);
         var key = Base32.FromBase32(secret);
@@ -98,10 +91,7 @@ public class AuthController : ControllerBase
         if (model.IsInvalid(key, out var errorModel))
             return BadRequest(errorModel);
 
-        if (User.Identity == null || !User.Identity.IsAuthenticated || string.IsNullOrWhiteSpace(User.Identity.Name))
-            return BadRequest(new PlainError("Not authenticated or no username"));
-
-        var user = await _db.Users.SingleOrDefaultAsync(u => u.Name == User.Identity.Name.ToLower());
+        var user = await _db.Users.SingleOrDefaultAsync(u => u.Name == token.UserName);
         if (user == null)
             return BadRequest(new PlainError("User not found"));
 
@@ -117,23 +107,25 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AutoLoginAsync()
     {
-        var hasAdmins = await _db.Users.AsNoTracking().AnyAsync(u => u.IsAdmin);
-        if (hasAdmins)
-            return BadRequest(new PlainError("There are admin users in database, autologin disabled."));
+        await Task.CompletedTask;
+        return BadRequest(new PlainError("TODO: New auth in place, this won't work"));
+        // var hasAdmins = await _db.Users.AsNoTracking().AnyAsync(u => u.IsAdmin);
+        // if (hasAdmins)
+        //     return BadRequest(new PlainError("There are admin users in database, autologin disabled."));
 
-        _logger.LogInformation("No admin users in database, autologing in...");
-        var expires = DateTime.UtcNow.AddMinutes(10);
-        var claims = new List<Claim> {
-            new(ClaimTypes.Name, "temporary admin"),
-            new(ClaimTypes.Role, C.ADMIN_ROLE),
-            new(ClaimTypes.Expiration, expires.ToBinary().ToString()),
-            new(OTP_CLAIM,"1"),
-        };
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties { AllowRefresh = false, ExpiresUtc = expires, IsPersistent = true };
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+        // _logger.LogInformation("No admin users in database, autologing in...");
+        // var expires = DateTime.UtcNow.AddMinutes(10);
+        // var claims = new List<Claim> {
+        //     new(ClaimTypes.Name, "temporary admin"),
+        //     new(ClaimTypes.Role, C.ADMIN_ROLE),
+        //     new(ClaimTypes.Expiration, expires.ToBinary().ToString()),
+        //     new(OTP_CLAIM,"1"),
+        // };
+        // var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        // var authProperties = new AuthenticationProperties { AllowRefresh = false, ExpiresUtc = expires, IsPersistent = true };
+        // await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        return Ok(new AuthStatusModel { Authenticated = true, HasOtp = true, Username = "temporary admin", Expires = expires });
+        // return Ok(new AuthStatusModel { Authenticated = true, HasOtp = true, Username = "temporary admin", Expires = expires });
     }
 
     [HttpPost(Name = "Login")]
@@ -162,25 +154,37 @@ public class AuthController : ControllerBase
                 return BadRequest(new PlainError(GENERIC_ERROR_MESSAGE));
         }
 
-        user.LastLogin = DateTime.UtcNow;
+        var issued = DateTime.UtcNow;
+        var expires = issued.AddHours(1);
+        user.LastLogin = issued;
+
+        var authToken = new AuthToken()
+        {
+            App = AuthApp.Web,
+            User = user,
+            Issued = issued,
+            Expires = expires,
+        };
+
+        _db.AuthTokens.Add(authToken);
         await _db.SaveChangesAsync();
 
-        var expires = DateTime.UtcNow.AddHours(1);
-        var claims = new List<Claim> {
-            new(ClaimTypes.Name, user.Name),
-            new(ClaimTypes.Sid, user.UserId.ToString()),
-            new(ClaimTypes.Expiration, expires.ToBinary().ToString())
+        var cacheToken = new CacheAuthToken(authToken);
+        var claimsIdentity = cacheToken.ToClaimsIdentity();
+        await HttpContext.SignInAsync(AppAuthenticationHandler.AUTHENTICATION_SCHEME, new ClaimsPrincipal(claimsIdentity));
+
+        var tokenProtector = _dpProvider.CreateProtector(AppAuthenticationHandler.AUTHENTICATION_SCHEME);
+        var response = new AuthStatusModel
+        {
+            Authenticated = true,
+            HasOtp = hasOtp,
+            Username = user.Name,
+            IsAdmin = user.IsAdmin,
+            Expires = expires,
+            Token = tokenProtector.Protect(authToken.AuthTokenId.ToString()),
         };
-        if (user.IsAdmin)
-            claims.Add(new Claim(ClaimTypes.Role, C.ADMIN_ROLE));
-        if (hasOtp)
-            claims.Add(new Claim(OTP_CLAIM, "1"));
 
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties { AllowRefresh = false, ExpiresUtc = expires, IsPersistent = true };
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
-
-        return Ok(new AuthStatusModel { Authenticated = true, HasOtp = hasOtp, Username = user.Name, IsAdmin = user.IsAdmin, Expires = expires });
+        return Ok(response);
     }
 
     [HttpDelete(Name = "Logout")]
@@ -189,7 +193,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> LogoutAsync()
     {
         if (HttpContext.User.Identity?.IsAuthenticated ?? false)
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(AppAuthenticationHandler.AUTHENTICATION_SCHEME);
         return NoContent();
     }
 
@@ -211,22 +215,36 @@ public class AuthController : ControllerBase
         if (model.IsInvalid(key, out var errorModel))
             return BadRequest(errorModel);
 
-        userDevice.LastLogin = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        var issued = DateTime.UtcNow;
+        var expires = issued.AddHours(3);
+        userDevice.LastLogin = issued;
 
-        var expires = DateTime.UtcNow.AddHours(3);
-        var claims = new List<Claim> {
-            // TODO: add claim to differentiate user vs device
-            new(ClaimTypes.Name, userDevice.User!.Name),
-            new(ClaimTypes.Sid, userDevice.UserDeviceId.ToString()),
-            new(ClaimTypes.Expiration, expires.ToBinary().ToString())
+        var authToken = new AuthToken()
+        {
+            App = AuthApp.Android,
+            UserId = userDevice.UserId,
+            Issued = issued,
+            Expires = expires,
         };
 
-        //TODO: figure out, cookie or jwt?
-        // var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        // var authProperties = new AuthenticationProperties { AllowRefresh = false, ExpiresUtc = expires, IsPersistent = true };
-        // await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+        _db.AuthTokens.Add(authToken);
+        await _db.SaveChangesAsync();
 
-        return Ok(new AuthStatusModel { Authenticated = true, HasOtp = true, Username = userDevice.User.Name, IsAdmin = userDevice.User.IsAdmin, Expires = expires });
+        var cacheToken = new CacheAuthToken(authToken);
+        var claimsIdentity = cacheToken.ToClaimsIdentity();
+        await HttpContext.SignInAsync(AppAuthenticationHandler.AUTHENTICATION_SCHEME, new ClaimsPrincipal(claimsIdentity));
+
+        var tokenProtector = _dpProvider.CreateProtector(AppAuthenticationHandler.AUTHENTICATION_SCHEME);
+        var response = new AuthStatusModel
+        {
+            Authenticated = true,
+            HasOtp = false,
+            Username = userDevice.User!.Name,
+            IsAdmin = userDevice.User!.IsAdmin,
+            Expires = expires,
+            Token = tokenProtector.Protect(authToken.AuthTokenId.ToString()),
+        };
+
+        return Ok(response);
     }
 }

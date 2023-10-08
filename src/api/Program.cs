@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 using Hangfire;
 using Hangfire.Common;
 using Hangfire.Storage.SQLite;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using selflix.Auth;
 using selflix.Db;
 using selflix.Extensions;
 using selflix.Services;
@@ -34,6 +34,7 @@ public class Program
             var builder = WebApplication.CreateBuilder(args);
             builder.Host.UseSerilog();
             builder.Services.Configure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.All);
+            builder.Services.AddMemoryCache();
             builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
             switch (C.DbContextType)
             {
@@ -55,13 +56,8 @@ public class Program
 
             builder.Services.AddSingleton<IPasswordHasher, PasswordHashingService>();
             builder.Services
-                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(opt =>
-                {
-                    opt.Cookie.Name = $".{nameof(selflix)}.auth";
-                    opt.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
-                    opt.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
-                });
+                .AddAuthentication(AppAuthenticationHandler.AUTHENTICATION_SCHEME)
+                .AddAppAuthentication();
 
             builder.Services.AddControllers(opt =>
                 {

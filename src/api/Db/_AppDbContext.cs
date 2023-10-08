@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using selflix.Services;
-using Serilog;
 
 namespace selflix.Db;
 
@@ -20,7 +19,8 @@ public class PostgresDbContext : AppDbContext
 }
 public partial class AppDbContext : DbContext, IDataProtectionKeyContext
 {
-    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+    public DbSet<AuthToken> AuthTokens => Set<AuthToken>();
     public DbSet<Dir> Dirs => Set<Dir>();
     public DbSet<Library> Libraries => Set<Library>();
     public DbSet<Video> Videos => Set<Video>();
@@ -41,6 +41,11 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<AuthToken>(e =>
+        {
+            e.HasKey(e => e.AuthTokenId);
+        });
 
         builder.Entity<Dir>(e =>
         {
@@ -66,6 +71,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         builder.Entity<User>(e =>
         {
             e.HasKey(e => e.UserId);
+            e.HasMany(e => e.AuthTokens).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(e => e.Devices).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(e => e.Watchers).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
         });
