@@ -81,7 +81,7 @@ const auth = useAuth()
     </header>
     <div class="container mt-4">
       <RouterView v-slot="{ Component }">
-        <Transition name="fade">
+        <Transition name="fade" mode="out-in">
           <component :is="Component" />
         </Transition>
       </RouterView>
@@ -103,5 +103,15 @@ const auth = useAuth()
 
 .bd-gutter {
   --bs-gutter-x: 3rem;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

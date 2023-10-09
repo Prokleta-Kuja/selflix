@@ -6,6 +6,7 @@ export interface IModal {
     scrollable?: boolean;
     centered?: boolean;
     shown?: boolean;
+    autoFocus?: boolean;
     onClose: () => void;
 }
 const el = ref<HTMLHeadingElement | null>(null);
@@ -19,7 +20,8 @@ const classDialog = computed(() => ({
     'modal-dialog-centered': props.centered,
 }))
 onMounted(() => {
-    el.value?.focus()
+    if (props.autoFocus)
+        el.value?.focus()
 })
 </script>
 <template>

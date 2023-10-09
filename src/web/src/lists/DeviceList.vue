@@ -4,10 +4,12 @@ import Search from '@/components/form/SearchBox.vue'
 import { Header, Pages, Sizes, type ITableParams, initParams, getQuery, updateParams } from "@/components/table"
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
 import { UserDeviceService, type UserDeviceLM, type UserDeviceVM } from "@/api";
+import PlusIcon from '@/components/icons/PlusIcon.vue'
 import TrashIcon from '@/components/icons/TrashIcon.vue'
 import { useRoute, useRouter } from "vue-router";
 import { dateText } from "@/tools";
 import AddUserDeviceModal from "@/modals/AddUserDeviceModal.vue";
+import EditUserDeviceModal from "@/modals/EditUserDeviceModal.vue";
 
 interface IUserDeviceParams extends ITableParams {
     searchTerm?: string;
@@ -15,7 +17,7 @@ interface IUserDeviceParams extends ITableParams {
 const route = useRoute()
 const router = useRouter()
 const props = defineProps<{ lastChange?: Date, queryPrefix?: string, userId?: number }>()
-const data = reactive<{ params: IUserDeviceParams, items: UserDeviceLM[], delete?: UserDeviceLM }>({ params: initParams(route.query, props.queryPrefix), items: [] });
+const data = reactive<{ params: IUserDeviceParams, items: UserDeviceLM[], adding?: boolean, edit?: UserDeviceLM, delete?: UserDeviceLM }>({ params: initParams(route.query, props.queryPrefix), items: [] });
 const refresh = (params?: ITableParams) => {
     if (params)
         data.params = params;
@@ -29,6 +31,8 @@ const refresh = (params?: ITableParams) => {
             updateParams(data.params, r)
         });
 };
+const showAdd = () => data.adding = true
+const showEdit = (item: UserDeviceLM) => data.edit = item;
 const showDelete = (item: UserDeviceLM) => data.delete = item;
 const hideDelete = () => data.delete = undefined;
 const deleteItem = () => {
@@ -50,6 +54,13 @@ const resetPageNumber = () => {
 const handleAdded = (item?: UserDeviceVM) => {
     if (item)
         data.items.unshift(item)
+    data.adding = false
+}
+
+const handleUpdated = (item?: UserDeviceVM) => {
+    if (item && data.edit)
+        data.edit.name = item.name
+    data.edit = undefined;
 }
 
 watch(() => props.lastChange, () => refresh());
@@ -74,14 +85,18 @@ refresh();
                     <Header :params="data.params" :on-sort="refresh" column="created" />
                     <Header :params="data.params" :on-sort="refresh" column="lastLogin" display="Last login" />
                     <th class="text-end p-1">
-                        <AddUserDeviceModal v-if="!props.userId" @added="handleAdded" />
+                        <button class="btn btn-success btn-sm" @click="showAdd">
+                            <PlusIcon />
+                        </button>
                     </th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="item in data.items" :key="item.id" class="align-middle">
                     <td>
-                        {{ item.name }}
+                        <a href="#" @click.prevent="showEdit(item)">
+                            {{ item.name }}
+                        </a>
                     </td>
                     <td>{{ item.brand }}</td>
                     <td>{{ item.model }}</td>
@@ -100,7 +115,9 @@ refresh();
         </table>
     </div>
     <Pages class="mb-2" :params="data.params" :on-change="refresh" />
-    <ConfirmationModal v-if="data.delete" title="User device deletion" :onClose="hideDelete" :onConfirm="deleteItem" shown>
+    <AddUserDeviceModal v-if="data.adding" @added="handleAdded" />
+    <EditUserDeviceModal v-if="data.edit" :model="data.edit" @updated="handleUpdated" />
+    <ConfirmationModal v-if="data.delete" title="User device deletion" @close="hideDelete" :onConfirm="deleteItem" shown>
         Are you sure you want to permanently delete <b>{{ data.delete.name }}</b>?
     </ConfirmationModal>
 </template>

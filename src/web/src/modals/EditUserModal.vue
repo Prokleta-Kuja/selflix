@@ -9,10 +9,10 @@ import Text from '@/components/form/TextBox.vue';
 import CheckBox from '@/components/form/CheckBox.vue';
 export interface IEditUser {
     model: UserVM,
-    onUpdated?: (updatedDomain: UserVM) => void
+    onUpdated?: (updatedItem: UserVM) => void
 }
 
-const mapUserModel = (m: UserVM): UserUM =>
+const mapItemModel = (m: UserVM): UserUM =>
 ({
     name: m.name,
     isAdmin: m.isAdmin,
@@ -20,7 +20,7 @@ const mapUserModel = (m: UserVM): UserUM =>
 })
 const props = defineProps<IEditUser>()
 const shown = ref(false)
-const item = reactive<IModelState<UserUM>>({ model: mapUserModel(props.model) })
+const item = reactive<IModelState<UserUM>>({ model: mapItemModel(props.model) })
 
 const toggle = () => shown.value = !shown.value
 const submit = () => {
