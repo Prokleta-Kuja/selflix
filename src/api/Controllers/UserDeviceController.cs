@@ -92,6 +92,7 @@ public class UserDeviceController : AppControllerBase
         if (model.IsInvalid(out var errorModel))
             return BadRequest(errorModel);
 
+        // TODO: add devices as admin for this user
         var userDevice = new UserDevice(token.UserId, model.DeviceId, model.Name)
         {
             Created = DateTime.UtcNow,

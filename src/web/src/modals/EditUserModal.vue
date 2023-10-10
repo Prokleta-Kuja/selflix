@@ -7,6 +7,8 @@ import SpinButton from '@/components/form/SpinButton.vue';
 import PencilSquareIcon from '@/components/icons/PencilSquareIcon.vue'
 import Text from '@/components/form/TextBox.vue';
 import CheckBox from '@/components/form/CheckBox.vue';
+import HiddenSubmit from '@/components/form/HiddenSubmit.vue'
+
 export interface IEditUser {
     model: UserVM,
     onUpdated?: (updatedItem: UserVM) => void
@@ -52,6 +54,7 @@ const submit = () => {
                     :error="item.error?.errors?.disabled" />
                 <CheckBox class="mb-3" label="Clear One Time Code Key" v-model="item.model.clearOtpKey"
                     :error="item.error?.errors?.clearOtpKey" />
+                <HiddenSubmit />
             </form>
         </template>
         <template #footer>

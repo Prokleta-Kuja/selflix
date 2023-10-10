@@ -24,9 +24,15 @@ export type { UserLMListResponse } from './models/UserLMListResponse';
 export type { UserUM } from './models/UserUM';
 export type { UserVM } from './models/UserVM';
 export type { ValidationError } from './models/ValidationError';
+export type { WatcherCM } from './models/WatcherCM';
+export type { WatcherLM } from './models/WatcherLM';
+export type { WatcherLMListResponse } from './models/WatcherLMListResponse';
+export type { WatcherUM } from './models/WatcherUM';
+export type { WatcherVM } from './models/WatcherVM';
 
 export { AuthService } from './services/AuthService';
 export { TestService } from './services/TestService';
 export { Test2Service } from './services/Test2Service';
 export { UserService } from './services/UserService';
 export { UserDeviceService } from './services/UserDeviceService';
+export { WatcherService } from './services/WatcherService';

@@ -8,6 +8,7 @@ import Text from '@/components/form/TextBox.vue';
 import CheckBox from '@/components/form/CheckBox.vue';
 import { useRouter } from 'vue-router';
 import PlusLgIcon from '@/components/icons/PlusLgIcon.vue'
+import HiddenSubmit from '@/components/form/HiddenSubmit.vue'
 
 const router = useRouter()
 const blank = (): UserCM => ({ name: '', isAdmin: false, password: '' })
@@ -37,6 +38,7 @@ const submit = () => {
                 <Text class="mb-3" label="Password" :autoComplete="'off'" :type="'password'" v-model="item.model.password"
                     :error="item.error?.errors?.password" required />
                 <CheckBox class="mb-3" label="Admin" v-model="item.model.isAdmin" :error="item.error?.errors?.isAdmin" />
+                <HiddenSubmit />
             </form>
         </template>
         <template #footer>

@@ -1,47 +1,54 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { type UserDeviceCM, UserDeviceService, type UserDeviceVM } from '@/api';
+import { type WatcherUM, WatcherService, type WatcherVM } from '@/api';
 import type IModelState from '@/components/form/modelState';
 import Modal from '@/components/GenericModal.vue';
 import SpinButton from '@/components/form/SpinButton.vue';
 import Text from '@/components/form/TextBox.vue';
 import HiddenSubmit from '@/components/form/HiddenSubmit.vue'
 
-const blank = (): UserDeviceCM => ({ name: '', deviceId: '' })
-const props = defineProps<{ onAdded?: (addedItem?: UserDeviceVM) => void }>()
-const item = reactive<IModelState<UserDeviceCM>>({ model: blank() })
-const emit = defineEmits<{ (e: 'added', item?: UserDeviceVM): void }>()
+export interface IEditWatcher {
+    model: WatcherVM,
+    onUpdated?: (updatedItem?: WatcherVM) => void
+}
+
+const mapItemModel = (m: WatcherVM): WatcherUM =>
+({
+    name: m.name,
+})
+const props = defineProps<IEditWatcher>()
+const item = reactive<IModelState<WatcherUM>>({ model: mapItemModel(props.model) })
 
 const close = () => {
-    if (props.onAdded)
-        props.onAdded()
+    if (props.onUpdated)
+        props.onUpdated()
 }
+
 const submit = () => {
     item.submitting = true;
     item.error = undefined;
-    UserDeviceService.createUserDevice({ requestBody: item.model })
+    WatcherService.updateWatcher({ watcherId: props.model.id, requestBody: item.model })
         .then(r => {
-            emit('added', r)
+            if (props.onUpdated)
+                props.onUpdated(r);
         })
         .catch(r => item.error = r.body)
         .finally(() => item.submitting = false);
 };
 </script>
 <template>
-    <Modal title="Add device" shown :onClose="close">
+    <Modal v-if="item.model" title="Edit watcher" shown :onClose="close">
         <template #body>
             <form @submit.prevent="submit">
                 <Text class="mb-3" label="Name" autoFocus v-model="item.model.name" required
                     :error="item.error?.errors?.name" />
-                <Text class="mb-3" label="DeviceId" v-model="item.model.deviceId" required
-                    :error="item.error?.errors?.deviceId" />
                 <HiddenSubmit />
             </form>
         </template>
         <template #footer>
             <p v-if="item.error" class="text-danger">{{ item.error.message }}</p>
             <button class="btn btn-outline-danger" @click="close">Cancel</button>
-            <SpinButton class="btn-primary" :loading="item.submitting" text="Add" loadingText="Adding" @click="submit" />
+            <SpinButton class="btn-primary" :loading="item.submitting" text="Save" loadingText="Saving" @click="submit" />
         </template>
     </Modal>
 </template>

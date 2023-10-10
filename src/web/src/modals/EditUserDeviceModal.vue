@@ -6,6 +6,8 @@ import Modal from '@/components/GenericModal.vue';
 import SpinButton from '@/components/form/SpinButton.vue';
 import Text from '@/components/form/TextBox.vue';
 import CheckBox from '@/components/form/CheckBox.vue';
+import HiddenSubmit from '@/components/form/HiddenSubmit.vue'
+
 export interface IEditUserDevice {
     model: UserDeviceVM,
     onUpdated?: (updatedItem?: UserDeviceVM) => void
@@ -43,6 +45,7 @@ const submit = () => {
                     :error="item.error?.errors?.name" />
                 <CheckBox class="mb-3" label="Clear Auth Key" v-model="item.model.clearOtpKey"
                     :error="item.error?.errors?.clearOtpKey" />
+                <HiddenSubmit />
             </form>
         </template>
         <template #footer>

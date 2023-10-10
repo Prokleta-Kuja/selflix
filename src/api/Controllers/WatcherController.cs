@@ -8,7 +8,7 @@ using selflix.Models;
 namespace selflix.Controllers;
 
 [ApiController]
-[Route("api/devices")]
+[Route("api/watchers")]
 [Tags(nameof(Watcher))]
 [Produces("application/json")]
 [ProducesErrorResponseType(typeof(PlainError))]
