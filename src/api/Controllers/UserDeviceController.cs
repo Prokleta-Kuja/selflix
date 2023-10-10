@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,12 +14,12 @@ namespace selflix.Controllers;
 [Tags(nameof(UserDevice))]
 [Produces("application/json")]
 [ProducesErrorResponseType(typeof(PlainError))]
-public class DevicesController : ControllerBase
+public class UserDeviceController : AppControllerBase
 {
-    readonly ILogger<DevicesController> _logger;
+    readonly ILogger<UserDeviceController> _logger;
     readonly AppDbContext _db;
     readonly IDataProtectionProvider _dpProvider;
-    public DevicesController(ILogger<DevicesController> logger, AppDbContext db, IDataProtectionProvider dpProvider)
+    public UserDeviceController(ILogger<UserDeviceController> logger, AppDbContext db, IDataProtectionProvider dpProvider)
     {
         _logger = logger;
         _db = db;
@@ -29,16 +30,15 @@ public class DevicesController : ControllerBase
     [ProducesResponseType(typeof(ListResponse<UserDeviceLM>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync([FromQuery] UserDeviceQuery req)
     {
+        if (!TryGetAuthToken(out var token))
+            return BadRequest(new PlainError("Could not determine user"));
+
         var query = _db.UserDevices.AsNoTracking();
 
-        var sidClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid)?.Value;
-        if (sidClaim == null || !int.TryParse(sidClaim, out var userId))
-            return BadRequest(new PlainError("Could not determine userid"));
-
-        if (req.UserId.HasValue && User.FindFirstValue(ClaimTypes.Role) == C.ADMIN_ROLE)
+        if (req.UserId.HasValue && token.IsAdmin)
             query = query.Where(ud => ud.UserId == req.UserId.Value);
         else
-            query = query.Where(ud => ud.UserId == userId);
+            query = query.Where(ud => ud.UserId == token.UserId);
 
         if (!string.IsNullOrWhiteSpace(req.SearchTerm))
             query = query.Where(ud => EF.Functions.Like(ud.Name, $"%{req.SearchTerm}%")
@@ -48,15 +48,15 @@ public class DevicesController : ControllerBase
 
         var count = await query.CountAsync();
 
-        if (!string.IsNullOrWhiteSpace(req.SortBy) && Enum.TryParse<UserDevicesSortBy>(req.SortBy, true, out var sortBy))
+        if (!string.IsNullOrWhiteSpace(req.SortBy) && Enum.TryParse<UserDeviceSortBy>(req.SortBy, true, out var sortBy))
             query = sortBy switch
             {
-                UserDevicesSortBy.Name => query.Order(ud => ud.Name, req.Ascending),
-                UserDevicesSortBy.Brand => query.Order(ud => ud.Brand, req.Ascending),
-                UserDevicesSortBy.Model => query.Order(ud => ud.Model, req.Ascending),
-                UserDevicesSortBy.OS => query.Order(ud => ud.OS, req.Ascending),
-                UserDevicesSortBy.Created => query.Order(ud => ud.Created, req.Ascending),
-                UserDevicesSortBy.LastLogin => query.Order(ud => ud.LastLogin, req.Ascending),
+                UserDeviceSortBy.Name => query.Order(ud => ud.Name, req.Ascending),
+                UserDeviceSortBy.Brand => query.Order(ud => ud.Brand, req.Ascending),
+                UserDeviceSortBy.Model => query.Order(ud => ud.Model, req.Ascending),
+                UserDeviceSortBy.OS => query.Order(ud => ud.OS, req.Ascending),
+                UserDeviceSortBy.Created => query.Order(ud => ud.Created, req.Ascending),
+                UserDeviceSortBy.LastLogin => query.Order(ud => ud.LastLogin, req.Ascending),
                 _ => query
             };
 
@@ -83,17 +83,16 @@ public class DevicesController : ControllerBase
     [ProducesResponseType(typeof(ValidationError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAsync(UserDeviceCM model)
     {
+        if (!TryGetAuthToken(out var token))
+            return BadRequest(new PlainError("Could not determine user"));
+
         model.Name = model.Name.Trim();
         model.DeviceId = model.DeviceId.ToUpper();
 
         if (model.IsInvalid(out var errorModel))
             return BadRequest(errorModel);
 
-        var sidClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid)?.Value;
-        if (sidClaim == null || !int.TryParse(sidClaim, out var userId))
-            return BadRequest(new PlainError("Could not determine userid"));
-
-        var userDevice = new UserDevice(userId, model.DeviceId, model.Name)
+        var userDevice = new UserDevice(token.UserId, model.DeviceId, model.Name)
         {
             Created = DateTime.UtcNow,
         };
@@ -110,16 +109,15 @@ public class DevicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync(int userDeviceId, UserDeviceUM model)
     {
+        if (!TryGetAuthToken(out var token))
+            return BadRequest(new PlainError("Could not determine user"));
+
         model.Name = model.Name.Trim();
 
         if (model.IsInvalid(out var errorModel))
             return BadRequest(errorModel);
 
-        var sidClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid)?.Value;
-        if (sidClaim == null || !int.TryParse(sidClaim, out var userId))
-            return BadRequest(new PlainError("Could not determine userid"));
-
-        var userDevice = await _db.UserDevices.SingleOrDefaultAsync(ud => ud.UserId == userId && ud.UserDeviceId == userDeviceId);
+        var userDevice = await _db.UserDevices.SingleOrDefaultAsync(ud => ud.UserId == token.UserId && ud.UserDeviceId == userDeviceId);
         if (userDevice == null)
             return NotFound(new PlainError("Not found"));
 
@@ -136,13 +134,12 @@ public class DevicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(int userDeviceId)
     {
-        var sidClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid)?.Value;
-        if (sidClaim == null || !int.TryParse(sidClaim, out var userId))
-            return BadRequest(new PlainError("Could not determine userid"));
+        if (!TryGetAuthToken(out var token))
+            return BadRequest(new PlainError("Could not determine user"));
 
         var query = _db.UserDevices.AsQueryable();
         if (User.FindFirstValue(ClaimTypes.Role) != C.ADMIN_ROLE)
-            query = query.Where(ud => ud.UserId == userId);
+            query = query.Where(ud => ud.UserId == token.UserId);
 
         var userDevice = await query.SingleOrDefaultAsync(ud => ud.UserDeviceId == userDeviceId);
         if (userDevice == null)
@@ -154,6 +151,7 @@ public class DevicesController : ControllerBase
         return NoContent();
     }
 
+    [AllowAnonymous]
     [HttpPatch("{deviceId}/actions/register", Name = "RegisterDevice")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -182,7 +180,7 @@ public class UserDeviceQuery : FilterQuery
     public int? UserId { get; set; }
 }
 
-public enum UserDevicesSortBy
+public enum UserDeviceSortBy
 {
     Name = 0,
     Brand = 1,

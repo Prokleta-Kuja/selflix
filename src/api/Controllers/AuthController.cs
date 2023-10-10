@@ -19,7 +19,7 @@ namespace selflix.Controllers;
 [Tags("Auth")]
 [Produces("application/json")]
 [ProducesErrorResponseType(typeof(PlainError))]
-public class AuthController : AppController
+public class AuthController : AppControllerBase
 {
     const string GENERIC_ERROR_MESSAGE = "Invalid username, password and/or one time code";
     const string GENERIC_DEVICE_ERROR_MESSAGE = "Invalid DeviceId and/or one time code";

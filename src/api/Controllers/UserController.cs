@@ -7,13 +7,12 @@ using selflix.Services;
 
 namespace selflix.Controllers;
 
-[Authorize(Roles = C.ADMIN_ROLE)]
 [ApiController]
 [Route("api/users")]
 [Tags(nameof(Db.User))]
 [Produces("application/json")]
 [ProducesErrorResponseType(typeof(PlainError))]
-public class UsersController : ControllerBase
+public class UsersController : AppControllerBase
 {
     readonly ILogger<UsersController> _logger;
     readonly AppDbContext _db;
@@ -32,6 +31,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(ListResponse<UserLM>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync([FromQuery] UserQuery req)
     {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
         var query = _db.Users.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(req.SearchTerm))
@@ -67,6 +69,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetOneAsnyc(int userId)
     {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
         var user = await _db.Users
            .AsNoTracking()
            .Where(u => u.UserId == userId)
@@ -84,6 +89,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(ValidationError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAsync(UserCM model)
     {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
         model.Name = model.Name.Trim().ToLower();
 
         if (model.IsInvalid(out var errorModel))
@@ -117,6 +125,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync(int userId, UserUM model)
     {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
         var user = await _db.Users
           .Where(u => u.UserId == userId)
           .FirstOrDefaultAsync();
@@ -163,6 +174,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleDisableAsync(int userId)
     {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
         var user = await _db.Users
           .Where(u => u.UserId == userId)
           .FirstOrDefaultAsync();
@@ -181,6 +195,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(int userId)
     {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
         var user = await _db.Users
           .Where(u => u.UserId == userId)
           .FirstOrDefaultAsync();

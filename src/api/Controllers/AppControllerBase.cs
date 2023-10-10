@@ -5,7 +5,7 @@ using selflix.Auth;
 
 namespace selflix.Controllers;
 
-public class AppController : ControllerBase
+public class AppControllerBase : ControllerBase
 {
     protected bool TryGetAuthToken(out CacheAuthToken token)
     {
