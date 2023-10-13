@@ -15,7 +15,8 @@ public class Library
     public int LibraryId { get; set; }
     public string Name { get; set; }
     public string MediaPath { get; set; }
-    public DateTime? LastIndex { get; set; }
+    public DateTime? LastFullIndexStarted { get; set; }
+    public DateTime? LastFullIndexCompleted { get; set; }
 
     public virtual List<Dir> Dirs { get; set; } = new();
     public virtual List<User> Users { get; set; } = new();

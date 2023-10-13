@@ -87,11 +87,11 @@ public class WatcherController : AppControllerBase
         return Ok(new WatcherVM(watcher));
     }
 
-    [HttpPut("{WatcherId}", Name = "UpdateWatcher")]
+    [HttpPut("{watcherId}", Name = "UpdateWatcher")]
     [ProducesResponseType(typeof(WatcherVM), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationError), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateAsync(int WatcherId, WatcherUM model)
+    public async Task<IActionResult> UpdateAsync(int watcherId, WatcherUM model)
     {
         model.Name = model.Name.Trim();
 
@@ -101,7 +101,7 @@ public class WatcherController : AppControllerBase
         if (!TryGetAuthToken(out var token))
             return BadRequest(new PlainError("Could not determine user"));
 
-        var watcher = await _db.Watchers.SingleOrDefaultAsync(ud => ud.UserId == token.UserId && ud.WatcherId == WatcherId);
+        var watcher = await _db.Watchers.SingleOrDefaultAsync(ud => ud.UserId == token.UserId && ud.WatcherId == watcherId);
         if (watcher == null)
             return NotFound(new PlainError("Not found"));
 
@@ -111,10 +111,10 @@ public class WatcherController : AppControllerBase
         return Ok(new WatcherVM(watcher));
     }
 
-    [HttpDelete("{WatcherId}", Name = "DeleteWatcher")]
+    [HttpDelete("{watcherId}", Name = "DeleteWatcher")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteAsync(int WatcherId)
+    public async Task<IActionResult> DeleteAsync(int watcherId)
     {
         if (!TryGetAuthToken(out var token))
             return BadRequest(new PlainError("Could not determine user"));
@@ -123,11 +123,11 @@ public class WatcherController : AppControllerBase
         if (User.FindFirstValue(ClaimTypes.Role) != C.ADMIN_ROLE)
             query = query.Where(ud => ud.UserId == token.UserId);
 
-        var Watcher = await query.SingleOrDefaultAsync(ud => ud.WatcherId == WatcherId);
-        if (Watcher == null)
+        var watcher = await query.SingleOrDefaultAsync(ud => ud.WatcherId == watcherId);
+        if (watcher == null)
             return NotFound(new PlainError("Not found"));
 
-        _db.Watchers.Remove(Watcher);
+        _db.Watchers.Remove(watcher);
         await _db.SaveChangesAsync();
 
         return NoContent();

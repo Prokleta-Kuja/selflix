@@ -25,7 +25,7 @@ public class IndexAll
         var libraries = await _db.Libraries.ToListAsync(token);
         foreach (var library in libraries)
         {
-            _job.Enqueue<IndexLibrary>(j => j.RunAsync(library.LibraryId, CancellationToken.None));
+            _job.Enqueue<IndexLibrary>(j => j.RunAsync(library.LibraryId, false, CancellationToken.None));
         }
 
         _logger.LogDebug("Scheduled {LibraryCount} library index jobs", libraries.Count);

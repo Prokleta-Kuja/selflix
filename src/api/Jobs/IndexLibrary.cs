@@ -9,50 +9,62 @@ namespace selflix.Jobs;
 public class IndexLibrary
 {
     readonly AppDbContext _db;
-    readonly IBackgroundJobClient _job;
     readonly ILogger<IndexLibrary> _logger;
-    public IndexLibrary(AppDbContext db, IBackgroundJobClient job, ILogger<IndexLibrary> logger)
+    bool _isFullIndex;
+    string _libPath = string.Empty;
+    public IndexLibrary(AppDbContext db, ILogger<IndexLibrary> logger)
     {
         _db = db;
-        _job = job;
         _logger = logger;
     }
     [DisplayName("Index Library")]
     [AutomaticRetry(Attempts = 0)]
-    public async Task RunAsync(int libraryId, CancellationToken token)
+
+    // TODO: full index, incremental + duration for missing
+    public async Task RunAsync(int libraryId, bool full, CancellationToken token)
     {
+        _isFullIndex = full;
         var library = await _db.Libraries.Include(l => l.Videos).SingleOrDefaultAsync(l => l.LibraryId == libraryId, token);
         if (library == null)
         {
             _logger.LogError("Could not find library {LibraryId}", libraryId);
             return;
         }
-        var libPath = C.Paths.MediaDataFor(library.MediaPath);
-        if (!Directory.Exists(libPath))
+        _libPath = C.Paths.MediaDataFor(library.MediaPath);
+        if (!Directory.Exists(_libPath))
         {
-            _logger.LogError("Library path {LibraryPath} does not exist or is currently unavailable", libPath);
+            _logger.LogError("Library path {LibraryPath} does not exist or is currently unavailable", _libPath);
+            if (library.LastFullIndexStarted > library.LastFullIndexCompleted)
+            {
+                library.LastFullIndexCompleted = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
             return;
         }
 
-        _logger.LogInformation("Indexing library {LibraryName} ({LibraryPath})", library.Name, libPath);
+        _logger.LogInformation("Indexing library {LibraryName} ({LibraryPath})", library.Name, _libPath);
+        library.LastFullIndexStarted = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
 
-        await ScanAndUpdateVideoFilesAsync(library, libPath, token);
+        await ScanAndUpdateVideoFilesAsync(library, token);
 
         await RebuildDirHierarchy(libraryId, token);
 
         await AddMissingDirsToVideos(libraryId, token);
 
+        library.LastFullIndexCompleted = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
         _logger.LogInformation("Indexing library {LibraryName} complete", library.Name);
     }
 
-    async Task ScanAndUpdateVideoFilesAsync(Library library, string libPath, CancellationToken token)
+    async Task ScanAndUpdateVideoFilesAsync(Library library, CancellationToken token)
     {
         var existingVideoPaths = new HashSet<string>();
         // Remove missing
         _logger.LogDebug("Removing missing videos");
         foreach (var video in library.Videos)
         {
-            var videoPath = Path.Join(libPath, video.LibraryPath);
+            var videoPath = Path.Join(_libPath, video.LibraryPath);
             if (!File.Exists(videoPath))
             {
                 _db.Videos.Remove(video);
@@ -65,36 +77,38 @@ public class IndexLibrary
 
         // Add new
         _logger.LogDebug("Adding new videos");
-        var allFiles = Directory.EnumerateFiles(libPath, "*", SearchOption.AllDirectories);
+        var allFiles = Directory.EnumerateFiles(_libPath, "*", SearchOption.AllDirectories);
         foreach (var filePath in allFiles)
         {
             if (existingVideoPaths.Contains(filePath) || !C.IsVideoFile(filePath))
                 continue;
 
-            var video = await GetVideoAsync(libPath, filePath, token);
+            var video = await GetVideoAsync(filePath, token);
             library.Videos.Add(video);
             _logger.LogDebug("Added video {VideoTitle} ({VideoPath})", video.Title, filePath);
             await _db.SaveChangesAsync(token);
         }
-        library.LastIndex = DateTime.UtcNow;
+        library.LastFullIndexCompleted = DateTime.UtcNow;
         await _db.SaveChangesAsync(token);
     }
 
-    async Task<Video> GetVideoAsync(string libPath, string filePath, CancellationToken token)
+    async Task<Video> GetVideoAsync(string filePath, CancellationToken token)
     {
         var title = Path.GetFileNameWithoutExtension(filePath);
-        var relativePath = Path.GetRelativePath(libPath, filePath);
+        var relativePath = Path.GetRelativePath(_libPath, filePath);
         var video = new Video(title, relativePath);
 
-        try
-        {
-            var mediaInfo = await FFProbe.AnalyseAsync(filePath, null, token);
-            video.Duration = mediaInfo.Duration;
-        }
-        catch (Exception)
-        {
-            _logger.LogError("Cannot get media info for {FilePath}", filePath);
-        }
+        if (_isFullIndex)
+            try
+            {
+                var mediaInfo = await FFProbe.AnalyseAsync(filePath, null, token);
+                video.Duration = mediaInfo.Duration;
+            }
+            catch (Exception)
+            {
+                _logger.LogError("Cannot get media info for {FilePath}", filePath);
+            }
+
         return video;
     }
 
