@@ -53,13 +53,7 @@ const router = createRouter({
     {
       path: '/libs',
       name: 'libs',
-      component: () => import('../views/HomeView.vue')
-    },
-    {
-      path: '/libs/:id(\\d+)',
-      name: 'lib',
-      props: parseId,
-      component: () => import('../views/HomeView.vue')
+      component: () => import('../views/LibraryView.vue')
     },
     {
       path: '/:pathMatch(.*)*',

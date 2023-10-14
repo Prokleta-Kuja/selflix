@@ -48,7 +48,7 @@ public class LibraryController : AppControllerBase
                 Id = l.LibraryId,
                 Name = l.Name,
                 MediaPath = l.MediaPath,
-                Indexing = l.LastFullIndexStarted > l.LastFullIndexCompleted,
+                Indexing = l.LastFullIndexStarted.HasValue && l.LastFullIndexCompleted.HasValue && l.LastFullIndexStarted.Value > l.LastFullIndexCompleted.Value,
                 LastFullIndexCompleted = l.LastFullIndexCompleted,
             })
             .ToListAsync();
@@ -138,6 +138,25 @@ public class LibraryController : AppControllerBase
         _job.Enqueue<Jobs.IndexLibrary>(j => j.RunAsync(libraryId, fullIndex, CancellationToken.None));
 
         return NoContent();
+    }
+
+    [HttpGet("paths", Name = "GetAllPaths")]
+    [ProducesResponseType(typeof(string[]), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllPathsAsync()
+    {
+        if (!TryGetAuthToken(out var token) || !token.IsAdmin)
+            return Forbid();
+
+        var dirs = Directory.GetDirectories(C.Paths.MediaData);
+        var existingPaths = await _db.Libraries.AsNoTracking().Select(l => l.MediaPath).ToListAsync();
+        var existingPathsHashset = existingPaths.ToHashSet();
+
+        var results = new List<string>(dirs.Length - existingPathsHashset.Count);
+        foreach (var dir in dirs)
+            if (!existingPathsHashset.Contains(dir))
+                results.Add(dir);
+
+        return Ok(results);
     }
 
     [HttpGet("{libraryId}/dirs/{directoryId:int?}", Name = "GetDirectory")]

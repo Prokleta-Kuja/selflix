@@ -136,6 +136,17 @@ export class LibraryService {
     }
 
     /**
+     * @returns string Success
+     * @throws ApiError
+     */
+    public static getAllPaths(): CancelablePromise<Array<string>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/libraries/paths',
+        });
+    }
+
+    /**
      * @returns DirVM Success
      * @throws ApiError
      */

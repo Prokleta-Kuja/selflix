@@ -40,7 +40,17 @@ public class AppAuthenticationHandler : SignInAuthenticationHandler<AppAuthentic
             return AuthenticateResult.Fail("Invalid token");
 
         var dp = Context.RequestServices.GetDataProtector(AUTHENTICATION_SCHEME);
-        var tokenIdVal = dp.Unprotect(encryptedTokenId);
+
+        var tokenIdVal = string.Empty;
+        try
+        {
+            tokenIdVal = dp.Unprotect(encryptedTokenId);
+        }
+        catch (Exception)
+        {
+            return AuthenticateResult.Fail("Invalid token");
+        }
+
         if (!int.TryParse(tokenIdVal, out var tokenId))
             return AuthenticateResult.Fail("Invalid token");
 
