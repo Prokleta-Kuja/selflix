@@ -151,7 +151,7 @@ public class LibraryController : AppControllerBase
             .AsQueryable();
 
         if (directoryId.HasValue)
-            query = query.Where(d => d.DirId == directoryId.Value);
+            query = query.Where(d => d.DirId == directoryId.Value && d.LibraryId == libraryId);
         else
             query = query.Where(d => d.LibraryId == libraryId && !d.ParentDirId.HasValue);
 

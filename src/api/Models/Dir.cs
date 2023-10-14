@@ -11,17 +11,15 @@ public class DirVM
         Name = d.Name;
         ParentDirId = d.ParentDirId;
 
-        foreach (var sub in d.SubDirs)
-            SubDirs.Add(new SubDirVM(sub));
-        foreach (var vid in d.Videos)
-            Videos.Add(new VideoVM(vid));
+        SubDirs = d.SubDirs.Select(s => new SubDirVM(s)).ToArray();
+        Videos = d.Videos.Select(v => new VideoVM(v)).ToArray();
     }
 
     [Required] public int Id { get; set; }
     [Required] public string Name { get; set; }
     public int? ParentDirId { get; set; }
-    public List<SubDirVM> SubDirs { get; set; } = new();
-    public List<VideoVM> Videos { get; set; } = new();
+    public SubDirVM[] SubDirs { get; set; }
+    public VideoVM[] Videos { get; set; }
 }
 
 public class SubDirVM
@@ -42,9 +40,9 @@ public class VideoVM
     {
         Id = v.VideoId;
         Title = v.Title;
-        Duration = v.Duration;
+        Duration = v.Duration.HasValue ? Convert.ToInt64(v.Duration.Value.TotalMilliseconds) : null;
     }
     [Required] public int Id { get; set; }
     [Required] public string Title { get; set; }
-    public TimeSpan? Duration { get; set; }
+    public long? Duration { get; set; }
 }

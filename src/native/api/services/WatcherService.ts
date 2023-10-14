@@ -79,7 +79,7 @@ export class WatcherService {
     }): CancelablePromise<WatcherVM> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/watchers/{WatcherId}',
+            url: '/api/watchers/{watcherId}',
             path: {
                 'watcherId': watcherId,
             },
@@ -103,7 +103,7 @@ export class WatcherService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/watchers/{WatcherId}',
+            url: '/api/watchers/{watcherId}',
             path: {
                 'watcherId': watcherId,
             },

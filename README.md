@@ -1,5 +1,12 @@
 # Development
 
+## OpenAPI
+
+```
+npm exec --prefix src/web openapi-typescript-codegen -- --useOptions --input http://localhost:5080/swagger/v1/swagger.json --output ./src/web/src/api
+npm exec --prefix src/web openapi-typescript-codegen -- --useOptions --input http://localhost:5080/swagger/v1/swagger.json --output ./src/native/api
+```
+
 ## Migrations
 
 ```
@@ -26,11 +33,4 @@ CREATE DATABASE dev_selflix
     LC_CTYPE = 'hr_HR.utf8'
     CONNECTION LIMIT = -1
     IS_TEMPLATE = False;
-```
-
-## OpenAPI
-
-```
-npm exec --prefix src/web openapi-typescript-codegen -- --useOptions --input http://localhost:5080/swagger/v1/swagger.json --output ./src/web/src/api
-npm exec --prefix src/web openapi-typescript-codegen -- --useOptions --input http://localhost:5080/swagger/v1/swagger.json --output ./src/native/api
 ```
