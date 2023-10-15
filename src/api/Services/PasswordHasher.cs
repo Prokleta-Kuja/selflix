@@ -27,12 +27,18 @@ public enum PasswordVerificationResult
 public interface IPasswordHasher
 {
     const string CHARS = "./-?:.,_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    static readonly byte[] s_chars = CHARS.Select(c => Convert.ToByte(c)).ToArray();
-    public static string GeneratePassword(int length)
+    static readonly byte[] s_chars = CHARS.Select(Convert.ToByte).ToArray();
+    public static string GeneratePassword(int length) => GeneratePassword(length, s_chars);
+    public static string GeneratePassword(int length, string chars)
+    {
+        var charsArray = chars.Select(Convert.ToByte).ToArray();
+        return GeneratePassword(length, charsArray);
+    }
+    public static string GeneratePassword(int length, byte[] chars)
     {
         var passwordArray = new byte[length];
         for (int i = 0; i < length; i++)
-            passwordArray[i] = s_chars[RandomNumberGenerator.GetInt32(length)];
+            passwordArray[i] = chars[RandomNumberGenerator.GetInt32(length)];
 
         var password = Encoding.UTF8.GetString(passwordArray);
         return password;

@@ -68,3 +68,9 @@ public class UserDeviceUM
         return errorModel.Errors.Count > 0;
     }
 }
+
+public class DeviceIdVM
+{
+    [Required] public required string DeviceId { get; set; }
+    [Required] public required string DeviceIdChunked { get; set; }
+}

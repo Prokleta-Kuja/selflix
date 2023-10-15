@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DeviceIdVM } from '../models/DeviceIdVM';
 import type { UserDeviceCM } from '../models/UserDeviceCM';
 import type { UserDeviceLMListResponse } from '../models/UserDeviceLMListResponse';
 import type { UserDeviceUM } from '../models/UserDeviceUM';
@@ -110,6 +111,17 @@ export class UserDeviceService {
             errors: {
                 404: `Not Found`,
             },
+        });
+    }
+
+    /**
+     * @returns DeviceIdVM Success
+     * @throws ApiError
+     */
+    public static generateDeviceId(): CancelablePromise<DeviceIdVM> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/devices/actions/generate-device-id',
         });
     }
 

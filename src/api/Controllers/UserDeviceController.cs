@@ -16,6 +16,9 @@ namespace selflix.Controllers;
 [ProducesErrorResponseType(typeof(PlainError))]
 public class UserDeviceController : AppControllerBase
 {
+    const string CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static readonly byte[] s_chars = CHARS.Select(Convert.ToByte).ToArray();
+
     readonly ILogger<UserDeviceController> _logger;
     readonly AppDbContext _db;
     readonly IDataProtectionProvider _dpProvider;
@@ -87,7 +90,8 @@ public class UserDeviceController : AppControllerBase
             return BadRequest(new PlainError("Could not determine user"));
 
         model.Name = model.Name.Trim();
-        model.DeviceId = model.DeviceId.ToUpper();
+        var chunks = model.DeviceId.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        model.DeviceId = string.Join(string.Empty, chunks).ToUpper();
 
         if (model.IsInvalid(out var errorModel))
             return BadRequest(errorModel);
@@ -153,12 +157,27 @@ public class UserDeviceController : AppControllerBase
     }
 
     [AllowAnonymous]
+    [HttpPatch("actions/generate-device-id", Name = "GenerateDeviceId")]
+    [ProducesResponseType(typeof(DeviceIdVM), StatusCodes.Status200OK)]
+    public IActionResult GenerateDeviceIdAsync()
+    {
+        var deviceId = IPasswordHasher.GeneratePassword(9, s_chars);
+        var chunks = deviceId.Chunk(3).Select(c => new string(c));
+
+        var model = new DeviceIdVM
+        {
+            DeviceId = deviceId,
+            DeviceIdChunked = string.Join(' ', chunks),
+        };
+        return Ok(model);
+    }
+
+    [AllowAnonymous]
     [HttpPatch("{deviceId}/actions/register", Name = "RegisterDevice")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegisterUserDeviceAsync(string deviceId)
     {
-        deviceId = deviceId.ToUpper();
         var userDevice = await _db.UserDevices.SingleOrDefaultAsync(ud => ud.DeviceId == deviceId);
         if (userDevice == null)
             return NotFound(new PlainError("Not found"));
@@ -166,7 +185,7 @@ public class UserDeviceController : AppControllerBase
         if (userDevice.OtpKey != null)
             return BadRequest(new PlainError("Device was previously registered, clear existing registration to reregister"));
 
-        var token = TotpService.CreateTotpToken(nameof(selflix), userDevice.DeviceId, nameof(selflix));
+        var token = TotpService.CreateTotpToken(nameof(selflix), userDevice.Name, nameof(selflix));
         var secret = Base32.FromBase32(token.Secret);
         var protector = _dpProvider.CreateProtector(nameof(userDevice.OtpKey));
         userDevice.OtpKey = protector.Protect(secret);

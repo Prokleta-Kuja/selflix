@@ -8,6 +8,7 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { AuthStatusModel } from './models/AuthStatusModel';
+export type { DeviceIdVM } from './models/DeviceIdVM';
 export type { DeviceLoginModel } from './models/DeviceLoginModel';
 export type { DirVM } from './models/DirVM';
 export type { LibraryCM } from './models/LibraryCM';
