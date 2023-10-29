@@ -26,4 +26,5 @@ public class UserDevice
     public DateTime? LastLogin { get; set; }
 
     public User? User { get; set; }
+    public virtual List<AuthToken> AuthTokens { get; set; } = new();
 }

@@ -79,6 +79,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         builder.Entity<UserDevice>(e =>
         {
             e.HasKey(e => e.UserDeviceId);
+            e.HasMany(e => e.AuthTokens).WithOne(e => e.UserDevice).HasForeignKey(e => e.UserDeviceId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<Watcher>(e =>

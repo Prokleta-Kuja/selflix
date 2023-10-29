@@ -1,52 +1,39 @@
+import "react-native-url-polyfill/auto"
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
-import { startActivityAsync } from 'expo-intent-launcher';
+import React, { useContext } from 'react';
+import ServerScreen from './screens/ServerScreen';
+import ServerContextProvider, { ServerContext } from './store/server-context';
+import NewServerScreen from './screens/NewServerScreen';
 
+
+const Stack = createNativeStackNavigator();
+
+const defaultStyle = { headerTitleStyle: { color: '#fff' }, headerStyle: { backgroundColor: '#000' } }
 export default function App() {
-  const testFile = process.env['REACT_APP_TEST_FILE']
-  const [text, setText] = useState("Tonko Hello world2!");
+  const serverCtx = useContext(ServerContext)
 
-  const klik = () => setText(testFile || 'NOPE')
+  if (serverCtx.isAuthenticated)
+    return (
+      <ServerContextProvider>
+        <StatusBar style="dark" />
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ animation: 'slide_from_right' }}>
+            {/* <Stack.Screen name='server' component={ServerScreen} /> */}
+            <Text>Authenticated</Text>
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ServerContextProvider>
+    );
 
-  const handlePress = async () => {
-    setText("Sviram")
-
-    const activity =
-      "android.intent.action.VIEW"
-    const result = await startActivityAsync(activity, {
-      data: testFile,
-      packageName: "org.videolan.vlc",
-      className: "org.videolan.vlc.gui.video.VideoPlayerActivity",
-      type: "video/*",
-      extra: {
-        "title": "Test file",
-        "from_start": false,
-        "position": "4474831",
-      }
-    })
-
-    setText(result.extra.extra_position + ' / ' + result.extra.extra_duration)
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{text}</Text>
-      <StatusBar style="auto" />
-      <Button title='test' onPress={klik}>Klikni me</Button>
-      <Button title='play' onPress={handlePress}>Sviraj film</Button>
-    </View>
-  );
+  return <ServerContextProvider>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ animation: 'slide_from_right' }}>
+        <Stack.Screen name='servers' component={ServerScreen} options={{ headerTitle: 'Welcome', ...defaultStyle }} />
+        <Stack.Screen name='newServer' component={NewServerScreen} options={{ headerTitle: 'Add server', ...defaultStyle }}>
+        </Stack.Screen>
+      </Stack.Navigator>
+    </NavigationContainer>
+  </ServerContextProvider>
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    color: '#fff'
-  }
-});

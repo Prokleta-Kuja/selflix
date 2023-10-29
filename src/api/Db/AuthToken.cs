@@ -4,11 +4,13 @@ public class AuthToken
 {
     public int AuthTokenId { get; set; }
     public int UserId { get; set; }
+    public int? UserDeviceId { get; set; }
     public AuthApp App { get; set; }
     public DateTime Issued { get; set; }
     public DateTime Expires { get; set; }
 
     public User? User { get; set; }
+    public UserDevice? UserDevice { get; set; }
 }
 
 public enum AuthApp

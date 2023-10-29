@@ -126,14 +126,14 @@ export class UserDeviceService {
     }
 
     /**
-     * @returns any Success
+     * @returns string Success
      * @throws ApiError
      */
     public static registerDevice({
         deviceId,
     }: {
         deviceId: string,
-    }): CancelablePromise<any> {
+    }): CancelablePromise<string> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/devices/{deviceId}/actions/register',

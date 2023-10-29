@@ -209,8 +209,9 @@ public class AuthController : AppControllerBase
     {
         model.DeviceId = model.DeviceId.ToUpper();
         var userDevice = await _db.UserDevices
-        .Include(ud => ud.User)
-        .SingleOrDefaultAsync(ud => ud.DeviceId == model.DeviceId);
+            .Include(ud => ud.User)
+            .Include(ud => ud.AuthTokens)
+            .SingleOrDefaultAsync(ud => ud.DeviceId == model.DeviceId);
 
         if (userDevice == null || userDevice.OtpKey == null)
             return BadRequest(new PlainError(GENERIC_DEVICE_ERROR_MESSAGE));
@@ -224,15 +225,24 @@ public class AuthController : AppControllerBase
         var expires = issued.AddHours(3);
         userDevice.LastLogin = issued;
 
+        var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+        foreach (var prevToken in userDevice.AuthTokens)
+        {
+            _db.AuthTokens.Remove(prevToken);
+            var prevTokenKey = AppAuthenticationHandler.AuthenticationCacheKey(prevToken.AuthTokenId);
+            cache.Remove(prevTokenKey);
+        }
+
         var authToken = new AuthToken()
         {
             App = AuthApp.Android,
             UserId = userDevice.UserId,
+            UserDevice = userDevice,
             Issued = issued,
             Expires = expires,
         };
 
-        _db.AuthTokens.Add(authToken);
+        userDevice.AuthTokens.Add(authToken);
         await _db.SaveChangesAsync();
 
         var cacheToken = new CacheAuthToken(authToken);
@@ -243,14 +253,13 @@ public class AuthController : AppControllerBase
         var response = new AuthStatusModel
         {
             Authenticated = true,
-            HasOtp = false,
+            HasOtp = true,
             Username = userDevice.User!.Name,
             IsAdmin = userDevice.User!.IsAdmin,
             Expires = expires,
             Token = tokenProtector.Protect(authToken.AuthTokenId.ToString()),
         };
 
-        var cache = HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
         var cacheKey = AppAuthenticationHandler.AuthenticationCacheKey(cacheToken.AuthTokenId);
         cache.Set(cacheKey, cacheToken);
 

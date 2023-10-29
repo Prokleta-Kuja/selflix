@@ -174,13 +174,13 @@ public class UserDeviceController : AppControllerBase
 
     [AllowAnonymous]
     [HttpPatch("{deviceId}/actions/register", Name = "RegisterDevice")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegisterUserDeviceAsync(string deviceId)
     {
         var userDevice = await _db.UserDevices.SingleOrDefaultAsync(ud => ud.DeviceId == deviceId);
         if (userDevice == null)
-            return NotFound(new PlainError("Not found"));
+            return NotFound(new PlainError("Device has not been added"));
 
         if (userDevice.OtpKey != null)
             return BadRequest(new PlainError("Device was previously registered, clear existing registration to reregister"));
