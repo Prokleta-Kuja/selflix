@@ -42,12 +42,12 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
-          cache-dependency-path: src/client-app/package-lock.json
+          cache-dependency-path: src/web/package-lock.json
       - name: Install npm dependencies
-        working-directory: src/client-app
+        working-directory: src/web
         run: npm ci
       - name: Generate static files
-        working-directory: src/client-app
+        working-directory: src/web
         run: npm run build
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
