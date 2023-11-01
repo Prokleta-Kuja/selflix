@@ -59,9 +59,7 @@ public class DeviceLoginModel
         if (Totp <= 0)
             errorModel.Errors.Add(nameof(Totp), "Required");
 
-        if (Totp.ToString().Length != TotpService.DIGITS)
-            errorModel.Errors.Add(nameof(Totp), $"Must be {TotpService.DIGITS} digits long");
-        else if (!TotpService.ValidateCode(securityToken, Totp))
+        if (!TotpService.ValidateCode(securityToken, Totp))
             errorModel.Errors.Add(nameof(Totp), "Invalid code");
 
         return errorModel.Errors.Count > 0;

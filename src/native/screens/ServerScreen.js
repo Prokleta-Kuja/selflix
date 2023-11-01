@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState, useContext } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ServerContext } from '../store/server-context';
 
@@ -12,7 +12,7 @@ export default function ServerScreen() {
 
     const handleNew = () => navigation.navigate('newServer')
     const handleSelect = (srv) => {
-        serverCtx.setServer(srv)
+        serverCtx.connectServer(srv)
     }
 
     useEffect(() => {
@@ -60,7 +60,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center'
     },
     item: {
-        // backgroundColor: '#252525',
         alignItems: 'center',
     },
     text: {

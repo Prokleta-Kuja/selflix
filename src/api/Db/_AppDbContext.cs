@@ -132,12 +132,6 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         var usrHash = hasher.HashPassword("usr");
         var usrUser = new User("usr", usrHash, false);
 
-        // TODO: remove
-        for (int i = 0; i < 101; i++)
-        {
-            Users.Add(new($"usr{i}", usrHash, false));
-        }
-
         Users.AddRange(devUser, usrUser);
         await SaveChangesAsync();
 

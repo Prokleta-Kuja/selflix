@@ -159,10 +159,10 @@ public class LibraryController : AppControllerBase
         return Ok(results);
     }
 
-    [HttpGet("{libraryId}/dirs/{directoryId:int?}", Name = "GetDirectory")]
+    [HttpGet("{libraryId}/dirs", Name = "GetDirectory")]
     [ProducesResponseType(typeof(DirVM), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetDirectoryAsync(int libraryId, int? directoryId)
+    public async Task<IActionResult> GetDirectoryAsync(int libraryId, [FromQuery] int? directoryId)
     {
         var query = _db.Dirs
             .Include(d => d.SubDirs)
@@ -174,6 +174,7 @@ public class LibraryController : AppControllerBase
         else
             query = query.Where(d => d.LibraryId == libraryId && !d.ParentDirId.HasValue);
 
+        // TODO: should be multiple dirs for library root???
         var dir = await query.SingleOrDefaultAsync();
         if (dir == null)
             return NotFound(new PlainError("Not found"));

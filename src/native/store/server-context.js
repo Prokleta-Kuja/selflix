@@ -1,73 +1,55 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { OpenAPI, AuthService } from '../api'
 import * as OTPAuth from "otpauth";
 
 export const ServerContext = createContext({
-    token: '',
     name: '',
-    deviceId: '',
-    origin: '',
-    secret: '',
     isAuthenticated: false,
-    signin: (token) => { },
-    signout: () => { },
     setServer: (srv) => { },
+    ensureAuth: () => { },
     clearServer: () => { },
 })
 
 const ServerContextProvider = ({ children }) => {
-    const [token, setToken] = useState();
-    const [name, setName] = useState();
-    const [deviceId, setDeviceId] = useState();
-    const [origin, setOrigin] = useState();
-    const [secret, setSecret] = useState();
+    const [server, setServer] = useState();
     const [expires, setExpires] = useState();
 
-    const signin = (token) => {
-        setToken(token)
-    }
-
-    const signout = () => {
-        setToken(null)
-    }
-
-    const setServer = (srv) => {
-        console.log("Srv", srv)
-        setName(srv.name)
-        setDeviceId(srv.deviceId)
-        setOrigin(srv.origin)
-        setSecret(srv.secret)
-
-        let totp = new OTPAuth.TOTP({ digits: 6, period: 30, secret: srv.secret, });
+    const connectServer = (srv) => {
         OpenAPI.BASE = srv.origin
-        AuthService.deviceLogin({ requestBody: { deviceId: srv.deviceId, totp: totp.generate() } })
+        setServer({ ...srv })
+    }
+
+    const ensureAuth = () => {
+        if (!server) return
+        if (expires && Date.now() + 5000 < expires) return
+
+        let totp = new OTPAuth.TOTP({ digits: 6, period: 30, secret: server.secret });
+        AuthService.deviceLogin({ requestBody: { deviceId: server.deviceId, totp: totp.generate() } })
             .then(r => {
-                console.log(r)
-                setExpires(Date.parse(r.expires))
-                const diff = Date.now() - expires
-                // TODO: automatic refresh
+                if (r.authenticated && r.token && r.expires) {
+                    OpenAPI.HEADERS = { authorization: `App ${r.token}` }
+                    setExpires(Date.parse(r.expires))
+                }
             })
             .catch(e => console.error(e))
     }
 
     const clearServer = () => {
-        setToken(null)
-        setName('')
-        setDeviceId('')
-        setOrigin('')
-        setSecret('')
+        setServer(undefined)
+        setExpires(undefined)
+        AuthService.logout().finally(() => {
+            OpenAPI.BASE = undefined
+            OpenAPI.HEADERS = undefined
+        })
     }
 
+    useEffect(ensureAuth, [server])
+
     const value = {
-        token,
-        name,
-        deviceId,
-        origin,
-        secret,
-        isAuthenticated: !!token,
-        signin,
-        signout,
-        setServer,
+        server,
+        isAuthenticated: Boolean(expires),
+        connectServer,
+        ensureAuth,
         clearServer,
     }
 

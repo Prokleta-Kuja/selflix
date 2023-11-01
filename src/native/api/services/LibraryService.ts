@@ -155,13 +155,15 @@ export class LibraryService {
         directoryId,
     }: {
         libraryId: number,
-        directoryId: number,
+        directoryId?: number,
     }): CancelablePromise<DirVM> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/libraries/{libraryId}/dirs/{directoryId}',
+            url: '/api/libraries/{libraryId}/dirs',
             path: {
                 'libraryId': libraryId,
+            },
+            query: {
                 'directoryId': directoryId,
             },
             errors: {
