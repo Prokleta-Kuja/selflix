@@ -21,6 +21,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
 {
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<AuthToken> AuthTokens => Set<AuthToken>();
+    public DbSet<StreamToken> StreamTokens => Set<StreamToken>();
     public DbSet<Dir> Dirs => Set<Dir>();
     public DbSet<Library> Libraries => Set<Library>();
     public DbSet<Video> Videos => Set<Video>();
@@ -47,6 +48,11 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
             e.HasKey(e => e.AuthTokenId);
         });
 
+        builder.Entity<StreamToken>(e =>
+        {
+            e.HasKey(e => e.StreamTokenId);
+        });
+
         builder.Entity<Dir>(e =>
         {
             e.HasKey(e => e.DirId);
@@ -65,6 +71,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         builder.Entity<Video>(e =>
         {
             e.HasKey(e => e.VideoId);
+            e.HasMany(e => e.StreamTokens).WithOne(e => e.Video).HasForeignKey(e => e.VideoId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(e => e.Views).WithOne(e => e.Video).HasForeignKey(e => e.VideoId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -72,6 +79,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         {
             e.HasKey(e => e.UserId);
             e.HasMany(e => e.AuthTokens).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.StreamTokens).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(e => e.Devices).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(e => e.Watchers).WithOne(e => e.User).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -80,6 +88,7 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
         {
             e.HasKey(e => e.UserDeviceId);
             e.HasMany(e => e.AuthTokens).WithOne(e => e.UserDevice).HasForeignKey(e => e.UserDeviceId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(e => e.StreamTokens).WithOne(e => e.UserDevice).HasForeignKey(e => e.UserDeviceId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<Watcher>(e =>

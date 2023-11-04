@@ -22,4 +22,5 @@ public class Video
     public Library? Library { get; set; }
     public Dir? Dir { get; set; }
     public virtual List<WatcherVideo> Views { get; set; } = new();
+    public virtual List<StreamToken> StreamTokens { get; set; } = new();
 }

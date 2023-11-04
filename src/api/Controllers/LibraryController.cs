@@ -164,23 +164,31 @@ public class LibraryController : AppControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetDirectoryAsync(int libraryId, [FromQuery] int? directoryId)
     {
-        var query = _db.Dirs
-            .Include(d => d.SubDirs)
-            .Include(d => d.Videos)
-            .AsQueryable();
-
         if (directoryId.HasValue)
-            query = query.Where(d => d.DirId == directoryId.Value && d.LibraryId == libraryId);
-        else
-            query = query.Where(d => d.LibraryId == libraryId && !d.ParentDirId.HasValue);
+        {
+            var dir = await _db.Dirs
+                .Include(d => d.SubDirs)
+                .Include(d => d.Videos)
+                .Where(d => d.DirId == directoryId.Value && d.LibraryId == libraryId)
+                .SingleOrDefaultAsync();
 
-        // TODO: should be multiple dirs for library root???
-        var dir = await query.SingleOrDefaultAsync();
-        if (dir == null)
+            if (dir is null)
+                return NotFound(new PlainError("Not found"));
+
+            var dirModel = new DirVM(dir);
+            return Ok(dirModel);
+        }
+
+        var lib = await _db.Libraries
+            .Include(l => l.Dirs.Where(d => !d.ParentDirId.HasValue))
+            .Include(l => l.Videos.Where(v => !v.DirId.HasValue))
+            .SingleOrDefaultAsync();
+
+        if (lib is null)
             return NotFound(new PlainError("Not found"));
 
-        var model = new DirVM(dir);
-        return Ok(model);
+        var libModel = new DirVM(lib);
+        return Ok(libModel);
     }
 }
 public class LibraryQuery : FilterQuery

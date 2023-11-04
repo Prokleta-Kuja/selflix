@@ -135,6 +135,7 @@ public class CacheAuthToken
     {
         AuthTokenId = token.AuthTokenId;
         UserId = token.UserId;
+        DeviceId = token.UserDeviceId;
         Issued = token.Issued;
         Expires = token.Expires;
         App = token.App;
@@ -152,6 +153,7 @@ public class CacheAuthToken
     }
     public int AuthTokenId { get; set; }
     public int UserId { get; set; }
+    public int? DeviceId { get; set; }
     public AuthApp App { get; set; }
     public DateTime Issued { get; set; }
     public DateTime Expires { get; set; }

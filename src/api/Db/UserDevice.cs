@@ -27,4 +27,5 @@ public class UserDevice
 
     public User? User { get; set; }
     public virtual List<AuthToken> AuthTokens { get; set; } = new();
+    public virtual List<StreamToken> StreamTokens { get; set; } = new();
 }

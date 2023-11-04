@@ -14,6 +14,12 @@ public class DirVM
         SubDirs = d.SubDirs.Select(s => new SubDirVM(s)).ToArray();
         Videos = d.Videos.Select(v => new VideoVM(v)).ToArray();
     }
+    public DirVM(Library l)
+    {
+        Name = l.Name;
+        SubDirs = l.Dirs.Select(d => new SubDirVM(d)).ToArray();
+        Videos = l.Videos.Select(v => new VideoVM(v)).ToArray();
+    }
 
     [Required] public int Id { get; set; }
     [Required] public string Name { get; set; }

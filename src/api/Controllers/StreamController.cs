@@ -2,33 +2,143 @@ using Microsoft.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.Extensions.Primitives;
-using System.Net;
+using selflix.Db;
+using selflix.Models;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace selflix.Controllers;
 
 // https://github.com/dotnet/aspnetcore/blob/main/src/Middleware/StaticFiles/src/StaticFileContext.cs
 
 [ApiController]
-[Route("[controller]")]
-public class TestController : ControllerBase
+[Route("/stream")]
+[Tags(NAME)]
+[Produces("application/json")]
+[ProducesErrorResponseType(typeof(PlainError))]
+public class StreamController : AppControllerBase
 {
+    const string NAME = "Stream";
     PreconditionState _ifMatchState = PreconditionState.Unspecified;
     PreconditionState _ifNoneMatchState = PreconditionState.Unspecified;
     PreconditionState _ifModifiedSinceState = PreconditionState.Unspecified;
     PreconditionState _ifUnmodifiedSinceState = PreconditionState.Unspecified;
-    private readonly ILogger<TestController> _logger;
+    private readonly ILogger<StreamController> _logger;
+    readonly AppDbContext _db;
+    readonly IMemoryCache _cache;
+    readonly IDataProtectionProvider _dpProvider;
 
-    public TestController(ILogger<TestController> logger)
+    public StreamController(ILogger<StreamController> logger, AppDbContext db, IMemoryCache cache, IDataProtectionProvider dpProvider)
     {
         _logger = logger;
+        _db = db;
+        _cache = cache;
+        _dpProvider = dpProvider;
     }
 
-    [HttpGet(Name = "Test")]
-    [HttpHead(Name = "TestHead")]
-    public async Task GetAsync()
+    public static string StreamCacheKey(int id) => $"stream.{id}";
+
+    [HttpPost("{VideoId}", Name = "RequestStreamToken")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PostAsync(int videoId)
     {
-        // TODO: lookup local file
-        var fi = new FileInfo("/workspaces/selflix/src/api/content/e.mkv");
+        if (!TryGetAuthToken(out var token) || !token.DeviceId.HasValue)
+            return BadRequest(new PlainError("Could not device id"));
+
+        var video = await _db.Videos
+            .Where(v => v.VideoId == videoId)
+            .Select(v => new { v.Library!.MediaPath, v.LibraryPath })
+            .SingleOrDefaultAsync();
+        if (video == null)
+            return NotFound();
+
+        var stream = new StreamToken
+        {
+            UserId = token.UserId,
+            UserDeviceId = token.DeviceId.Value,
+            VideoId = videoId,
+            Start = DateTime.UtcNow,
+        };
+        _db.StreamTokens.Add(stream);
+        await _db.SaveChangesAsync();
+
+        _cache.Set(
+            StreamCacheKey(stream.StreamTokenId),
+            Path.Join(C.Paths.MediaDataFor(video.MediaPath), video.LibraryPath)
+        );
+
+        var streamProtector = _dpProvider.CreateProtector(NAME);
+        var encrypted = streamProtector.Protect(stream.StreamTokenId.ToString());
+        return Ok(encrypted);
+    }
+
+    [HttpPut("{StreamKey}", Name = "CompleteStreamToken")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PutAsync(string streamKey)
+    {
+        if (!TryGetAuthToken(out var token) || !token.DeviceId.HasValue)
+            return BadRequest(new PlainError("Could not device id"));
+
+        var streamProtector = _dpProvider.CreateProtector(NAME);
+        try
+        {
+            var streamTokenIdStr = streamProtector.Unprotect(streamKey);
+            if (!int.TryParse(streamTokenIdStr, out var streamTokenId))
+                return BadRequest(new PlainError("Invalid key"));
+
+            var stream = await _db.StreamTokens.SingleOrDefaultAsync(st => st.StreamTokenId == streamTokenId);
+            if (stream is null)
+                return NotFound();
+
+            stream.End = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            _cache.Remove(StreamCacheKey(stream.StreamTokenId));
+        }
+        catch (Exception)
+        {
+            return BadRequest(new PlainError("Invalid key"));
+        }
+
+        return Ok();
+    }
+
+    [HttpGet("{StreamKey}", Name = "Stream")]
+    [HttpHead("{StreamKey}", Name = "StreamHead")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task GetAsync(string streamKey)
+    {
+        var streamProtector = _dpProvider.CreateProtector(NAME);
+        FileInfo fi;
+        try
+        {
+            var streamTokenIdStr = streamProtector.Unprotect(streamKey);
+            if (!int.TryParse(streamTokenIdStr, out var streamTokenId))
+            {
+                Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            var videoPath = _cache.Get<string>(StreamCacheKey(streamTokenId));
+            if (string.IsNullOrWhiteSpace(videoPath))
+            {
+                Response.StatusCode = StatusCodes.Status404NotFound;
+                return;
+            }
+
+            fi = new FileInfo(videoPath);
+        }
+        catch (Exception)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
 
         var now = DateTimeOffset.UtcNow;
         var lastModified = new DateTimeOffset(fi.LastWriteTimeUtc);
@@ -148,7 +258,6 @@ public class TestController : ControllerBase
                         await Response.SendFileAsync(fi.FullName, begin, contentLength, HttpContext.RequestAborted);
                     }
                     catch (OperationCanceledException) {/* Don't throw this exception, it's most likely caused by the client disconnecting. */}
-
                     return;
                 }
 
@@ -279,4 +388,10 @@ internal static class RangeHelper
 
         return new RangeItemHeaderValue(start, end);
     }
+}
+
+public class StreamCache
+{
+    public int StreamTokenId { get; set; }
+    public string VideoPath { get; set; } = null!;
 }
