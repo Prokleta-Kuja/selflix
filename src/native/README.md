@@ -3,6 +3,7 @@
 ## Debug device
 
 If pairing is needed, open developer tools on device:
+
 - turn on Wireless debugging
 - turn on pairing -> should provide pairing code + IP:PORT
 - type `adb pair IP:PORT`
@@ -11,13 +12,15 @@ Connect to device with `adb connect IP:PORT`, note that port may have changed si
 
 ## Generate signing keys
 
+Should be placed in `src/native/android/app/`
+
 ```
 keytool -genkeypair -v -storetype PKCS12 -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 ## On every dev container recreation
 
-Create file `~/.gradle/gradle.properties` with contents:
+Create file `~/.gradle/gradle.properties` (HOME dir!!!) with contents:
 
 ```
 MYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore
@@ -27,6 +30,7 @@ MYAPP_UPLOAD_KEY_PASSWORD=*****
 ```
 
 ## Build a release
+
 ```
 cd src/native/
 # To generate all the Android and IOS files

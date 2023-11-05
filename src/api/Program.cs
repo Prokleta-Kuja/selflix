@@ -162,16 +162,7 @@ public class Program
         else
             await db.Database.EnsureCreatedAsync();
 
-        if (C.IsDebug && !db.Users.Any())
-        {
-            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-            await db.InitializeDefaults(hasher);
-        }
-
-        if (C.IsDebug)
-        {
-            // var job = ActivatorUtilities.CreateInstance<Jobs.IndexLibrary>(scope.ServiceProvider);
-            // await job.RunAsync(3, CancellationToken.None);
-        }
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        await db.InitializeDefaults(hasher);
     }
 }
