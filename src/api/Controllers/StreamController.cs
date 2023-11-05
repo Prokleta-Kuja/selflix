@@ -7,13 +7,14 @@ using selflix.Models;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Authorization;
 
 namespace selflix.Controllers;
 
 // https://github.com/dotnet/aspnetcore/blob/main/src/Middleware/StaticFiles/src/StaticFileContext.cs
 
 [ApiController]
-[Route("/stream")]
+[Route("api/stream")]
 [Tags(NAME)]
 [Produces("application/json")]
 [ProducesErrorResponseType(typeof(PlainError))]
@@ -39,7 +40,7 @@ public class StreamController : AppControllerBase
 
     public static string StreamCacheKey(int id) => $"stream.{id}";
 
-    [HttpPost("{VideoId}", Name = "RequestStreamToken")]
+    [HttpPost("{videoId}", Name = "RequestStreamKey")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -75,7 +76,7 @@ public class StreamController : AppControllerBase
         return Ok(encrypted);
     }
 
-    [HttpPut("{StreamKey}", Name = "CompleteStreamToken")]
+    [HttpPut("{streamKey}", Name = "CompleteStreamKey")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -107,8 +108,9 @@ public class StreamController : AppControllerBase
         return Ok();
     }
 
-    [HttpGet("{StreamKey}", Name = "Stream")]
-    [HttpHead("{StreamKey}", Name = "StreamHead")]
+    [AllowAnonymous]
+    [HttpGet("{streamKey}", Name = "Stream")]
+    [HttpHead("{streamKey}", Name = "StreamHead")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

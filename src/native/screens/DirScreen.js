@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ScrollView, StyleSheet, Text, View, Pressable, BackHandler } from 'react-native';
 import { ServerContext } from '../store/server-context';
-import { LibraryService } from '../api';
+import { OpenAPI, LibraryService, StreamService } from '../api';
 import { startActivityAsync } from 'expo-intent-launcher';
 
 export default function DirScreen() {
@@ -24,17 +24,33 @@ export default function DirScreen() {
                 .catch(e => console.error(e))
         }
         loadDir()
+
+        const backAction = () => {
+            navigation.goBack()
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction,
+        );
+
+        return () => backHandler.remove();
     }, [])
 
-    const handleSelect = (lib) => {
-        navigation.navigate('dir')
+    const handleSelect = (dir) => {
+        console.log("Selected", dir)
+        navigation.push('dir', { libId: route.libId, dirId: dir.id })
     }
 
     const handlePlay = async (vid) => {
+        const key = await StreamService.requestStreamKey({ videoId: vid.id })
+        const url = `${OpenAPI.BASE}/api/stream/${key}`
+
         const activity =
             "android.intent.action.VIEW"
         const result = await startActivityAsync(activity, {
-            data: vid.what, // TODO:
+            data: url,
             packageName: "org.videolan.vlc",
             className: "org.videolan.vlc.gui.video.VideoPlayerActivity",
             type: "video/*",
@@ -44,6 +60,7 @@ export default function DirScreen() {
                 //"position": "4474831",
             }
         })
+        await StreamService.completeStreamKey({ streamKey: key })
         console.log("Playback ended", result.extra)
     }
 

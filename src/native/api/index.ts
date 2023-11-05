@@ -41,7 +41,7 @@ export type { WatcherVM } from './models/WatcherVM';
 
 export { AuthService } from './services/AuthService';
 export { LibraryService } from './services/LibraryService';
-export { TestService } from './services/TestService';
+export { StreamService } from './services/StreamService';
 export { Test2Service } from './services/Test2Service';
 export { UserService } from './services/UserService';
 export { UserDeviceService } from './services/UserDeviceService';
