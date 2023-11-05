@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
 WORKDIR /app
 COPY ./src/api/out ./
+COPY ./src/web/dist ./web
 
 ENV ASPNETCORE_URLS=http://*:5080 \
     LOCALE=en-US \
