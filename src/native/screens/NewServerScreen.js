@@ -14,8 +14,11 @@ export default function NewServerScreen() {
 
   const generateDeviceId = () => {
     setLoading(true)
-    setUrl(prev => prev.replace(/\/+$/, ""))
-    OpenAPI.BASE = url
+    let clean = url.toLowerCase().replace(/\/+$/, "")
+    if (!clean.startsWith('http'))
+      clean = `https://${clean}`
+    setUrl(clean)
+    OpenAPI.BASE = clean
     UserDeviceService.generateDeviceId()
       .then(r => {
         setDeviceId({ id: r.deviceId, chunked: r.deviceIdChunked })
@@ -32,16 +35,16 @@ export default function NewServerScreen() {
       .then(async r => {
         setError('')
         try {
+          const u = new URL(url)
           let jsonServers = await AsyncStorage.getItem('servers');
           if (jsonServers === null) jsonServers = "[]"
           const servers = JSON.parse(jsonServers)
-          const existingIdx = servers.findIndex(srv => srv.name)
+          const existingIdx = servers.findIndex(srv => srv.name === u.hostname)
           if (existingIdx > -1) {
             console.log("Removing server", servers[existingIdx].name)
             servers.splice(existingIdx, 1)
           }
 
-          const u = new URL(url)
           servers.push({
             name: u.hostname, // does not contain port or protocol
             origin: u.origin,
@@ -61,7 +64,7 @@ export default function NewServerScreen() {
           setError("Failed to read servers")
         }
         if (!error)
-          navigation.navigate('servers')
+          navigation.push('servers')
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))

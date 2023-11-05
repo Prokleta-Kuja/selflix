@@ -43,6 +43,13 @@ npx react-native run-android --mode="release"
 # If you want to sign the APK and publish to Google Play Store.
 # This generates AAB
 npx react-native build-android --mode=release
+
+# If you want to get plain apk
+cd android
+gradlew assembleRelease
 ```
+
+The generated AAB can be found under `android/app/build/outputs/bundle/release/app-release.aab`, and is ready to be uploaded to Google Play.
+The generated APKs can be found under `android/app/build/outputs/apk/release/app-*.apk`, and is ready to be deployed.
 
 Read [documentation](https://reactnative.dev/docs/signed-apk-android)

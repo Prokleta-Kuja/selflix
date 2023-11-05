@@ -182,7 +182,7 @@ public class LibraryController : AppControllerBase
         var lib = await _db.Libraries
             .Include(l => l.Dirs.Where(d => !d.ParentDirId.HasValue))
             .Include(l => l.Videos.Where(v => !v.DirId.HasValue))
-            .SingleOrDefaultAsync();
+            .SingleOrDefaultAsync(l => l.LibraryId == libraryId);
 
         if (lib is null)
             return NotFound(new PlainError("Not found"));

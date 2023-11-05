@@ -10,14 +10,19 @@ export default function ServerScreen() {
     const navigation = useNavigation()
     const [servers, setServers] = useState([])
 
-    const handleNew = () => navigation.navigate('newServer')
+    const handleNew = () => navigation.push('newServer')
     const handleSelect = (srv) => {
         serverCtx.connectServer(srv)
+    }
+    const handleClear = async () => {
+        await AsyncStorage.setItem('servers', '[]');
+        setServers([])
     }
 
     useEffect(() => {
         const loadServers = async () => {
             try {
+                console.log("loading servers")
                 let jsonServers = await AsyncStorage.getItem('servers');
                 if (jsonServers === null) jsonServers = "[]"
                 setServers(JSON.parse(jsonServers))
@@ -39,6 +44,11 @@ export default function ServerScreen() {
             <Pressable focusable onPress={handleNew} >
                 <View style={styles.item}>
                     <Text style={styles.text}>Add new server</Text>
+                </View>
+            </Pressable>
+            <Pressable focusable onPress={handleClear} >
+                <View style={styles.item}>
+                    <Text style={styles.text}>Remove all servers</Text>
                 </View>
             </Pressable>
         </ScrollView>

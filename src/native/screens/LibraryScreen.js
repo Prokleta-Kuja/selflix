@@ -32,7 +32,7 @@ export default function LibraryScreen() {
     }, [])
 
     const handleSelect = (lib) => {
-        navigation.navigate('dir', { libId: lib.id })
+        navigation.push('dir', { libId: lib.id })
     }
 
     return <View style={styles.container}>

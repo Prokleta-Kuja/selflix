@@ -125,10 +125,11 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
     }
     public async ValueTask InitializeDefaults(IPasswordHasher hasher)
     {
+        if (await Users.AnyAsync())
+            return;
+
         if (!Debugger.IsAttached)
         {
-            if (await Users.AnyAsync())
-                return;
             var adminPass = IPasswordHasher.GeneratePassword(16);
             var adminHash = hasher.HashPassword(adminPass);
             var adminUser = new User("admin", adminHash, true);
