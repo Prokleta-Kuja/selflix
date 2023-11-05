@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using selflix.Services;
+using Serilog;
 
 namespace selflix.Db;
 
@@ -126,12 +127,14 @@ public partial class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         if (!Debugger.IsAttached)
         {
-            // var adminPass = IPasswordHasher.GeneratePassword(16);
-            // var adminHash = hasher.HashPassword(adminPass);
-            // var adminUser = new User("admin", adminHash, true);
-            // Users.Add(adminUser);
-            // await SaveChangesAsync();
-            // Log.Warning("Generated default admin password {Password}, please disable the user after initial login", adminPass);
+            if (await Users.AnyAsync())
+                return;
+            var adminPass = IPasswordHasher.GeneratePassword(16);
+            var adminHash = hasher.HashPassword(adminPass);
+            var adminUser = new User("admin", adminHash, true);
+            Users.Add(adminUser);
+            await SaveChangesAsync();
+            Log.Warning("Generated default admin password {Password}, please disable the user after initial login", adminPass);
             return;
         }
 
